@@ -1473,7 +1473,7 @@ function showWhatsAppModal(){
     html += "<div style='font-size:11px;color:#9ca3af;margin-bottom:16px'>Sans numéro : "+noWa.map(function(s){return s.prenom;}).join(", ")+"</div>";
   }
 
-  html += "<button onclick='document.getElementById("wa-modal").remove()' style='width:100%;height:36px;background:#1a1916;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer'>Fermer</button>";
+  var closeBtn = document.createElement("button"); closeBtn.textContent="Fermer"; closeBtn.style.cssText="width:100%;height:36px;background:#1a1916;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer"; closeBtn.onclick=function(){document.getElementById("wa-modal").remove();}; html += closeBtn.outerHTML;
   html += "</div>";
 
   modal.innerHTML = html;
