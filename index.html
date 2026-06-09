@@ -1133,31 +1133,79 @@ function showProfileModal() {
   modal.id = "profile-modal";
   modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center";
 
-  modal.innerHTML =
-    "<div style='background:#fff;border-radius:14px;padding:28px;max-width:360px;width:92%;box-shadow:0 16px 48px rgba(0,0,0,.2);font-family:DM Sans,sans-serif'>" +
-    "<div style='font-family:Syne,sans-serif;font-weight:800;font-size:17px;margin-bottom:6px;color:#1a1916'>👤 Choisir votre profil</div>" +
-    "<p style='font-size:12px;color:#7a746c;margin-bottom:20px'>Entrez votre code PIN pour accéder à votre espace.</p>" +
+  // Build modal using DOM (no innerHTML quote issues)
+  var box = document.createElement("div");
+  box.style.cssText = "background:#fff;border-radius:14px;padding:28px;max-width:360px;width:92%;box-shadow:0 16px 48px rgba(0,0,0,.2);font-family:DM Sans,sans-serif";
 
-    "<div id='profile-valerie-btn' onclick='selectProfileCard(&quot;valerie&quot;)' style='display:flex;align-items:center;gap:12px;padding:12px 14px;border:2px solid #e0dbd3;border-radius:10px;cursor:pointer;margin-bottom:8px;transition:border-color .15s'>" +
-    "<div style='width:36px;height:36px;border-radius:50%;background:#db2777;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff'>V</div>" +
-    "<div><div style='font-weight:600;font-size:14px'>Valérie</div><div style='font-size:11px;color:#7a746c'>Chantiers · Salariés · Absences · Véhicules · Planning</div></div>" +
-    "</div>" +
+  var title = document.createElement("div");
+  title.style.cssText = "font-family:Syne,sans-serif;font-weight:800;font-size:17px;margin-bottom:6px;color:#1a1916";
+  title.textContent = "👤 Choisir votre profil";
+  box.appendChild(title);
 
-    "<div id='profile-quentin-btn' onclick='selectProfileCard(&quot;quentin&quot;)' style='display:flex;align-items:center;gap:12px;padding:12px 14px;border:2px solid #e0dbd3;border-radius:10px;cursor:pointer;margin-bottom:20px;transition:border-color .15s'>" +
-    "<div style='width:36px;height:36px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff'>Q</div>" +
-    "<div><div style='font-weight:600;font-size:14px'>Quentin</div><div style='font-size:11px;color:#7a746c'>Planning uniquement</div></div>" +
-    "</div>" +
+  var sub = document.createElement("p");
+  sub.style.cssText = "font-size:12px;color:#7a746c;margin-bottom:20px";
+  sub.textContent = "Entrez votre code PIN pour accéder à votre espace.";
+  box.appendChild(sub);
 
-    "<div id='pin-section' style='display:none'>" +
-    "<div style='font-size:12px;font-weight:600;margin-bottom:6px;color:#1a1916' id='pin-label'>Code PIN :</div>" +
-    "<div style='display:flex;gap:8px'>" +
-    "<input id='pin-input' type='password' maxlength='8' placeholder='••••' style='flex:1;height:38px;border:1px solid #c5bfb5;border-radius:8px;padding:0 12px;font-size:16px;outline:none;letter-spacing:4px'>" +
-    "<button onclick='confirmPin()' style='height:38px;padding:0 16px;background:#1a1916;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer'>OK</button>" +
-    "</div>" +
-    "<div id='pin-error' style='color:#dc2626;font-size:11px;margin-top:5px;display:none'>Code incorrect, réessayez.</div>" +
-    "</div>" +
-    "</div>";
+  function makeProfileBtn(key, color, name, desc) {
+    var btn = document.createElement("div");
+    btn.id = "profile-"+key+"-btn";
+    btn.style.cssText = "display:flex;align-items:center;gap:12px;padding:12px 14px;border:2px solid #e0dbd3;border-radius:10px;cursor:pointer;margin-bottom:8px;transition:border-color .15s";
+    btn.onclick = function(){ selectProfileCard(key); };
+    var av = document.createElement("div");
+    av.style.cssText = "width:36px;height:36px;border-radius:50%;background:"+color+";display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex-shrink:0";
+    av.textContent = name[0];
+    btn.appendChild(av);
+    var info = document.createElement("div");
+    var nm = document.createElement("div");
+    nm.style.cssText = "font-weight:600;font-size:14px";
+    nm.textContent = name;
+    info.appendChild(nm);
+    var ds = document.createElement("div");
+    ds.style.cssText = "font-size:11px;color:#7a746c";
+    ds.textContent = desc;
+    info.appendChild(ds);
+    btn.appendChild(info);
+    return btn;
+  }
 
+  box.appendChild(makeProfileBtn("valerie","#db2777","Valérie","Chantiers · Salariés · Absences · Véhicules · Planning"));
+  box.appendChild(makeProfileBtn("quentin","#2563eb","Quentin","Planning uniquement"));
+
+  var pinSection = document.createElement("div");
+  pinSection.id = "pin-section";
+  pinSection.style.display = "none";
+
+  var pinLabel = document.createElement("div");
+  pinLabel.id = "pin-label";
+  pinLabel.style.cssText = "font-size:12px;font-weight:600;margin-bottom:6px;color:#1a1916";
+  pinLabel.textContent = "Code PIN :";
+  pinSection.appendChild(pinLabel);
+
+  var pinRow = document.createElement("div");
+  pinRow.style.cssText = "display:flex;gap:8px";
+  var pinInput = document.createElement("input");
+  pinInput.type = "password";
+  pinInput.id = "pin-input";
+  pinInput.maxLength = 8;
+  pinInput.placeholder = "••••";
+  pinInput.style.cssText = "flex:1;height:38px;border:1px solid #c5bfb5;border-radius:8px;padding:0 12px;font-size:16px;outline:none;letter-spacing:4px";
+  var pinBtn = document.createElement("button");
+  pinBtn.style.cssText = "height:38px;padding:0 16px;background:#1a1916;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer";
+  pinBtn.textContent = "OK";
+  pinBtn.onclick = confirmPin;
+  pinRow.appendChild(pinInput);
+  pinRow.appendChild(pinBtn);
+  pinSection.appendChild(pinRow);
+
+  var pinError = document.createElement("div");
+  pinError.id = "pin-error";
+  pinError.style.cssText = "color:#dc2626;font-size:11px;margin-top:5px;display:none";
+  pinError.textContent = "Code incorrect, réessayez.";
+  pinSection.appendChild(pinError);
+
+  box.appendChild(pinSection);
+  modal.appendChild(box);
   document.body.appendChild(modal);
   modal.onclick = function(e){ if(e.target === modal) modal.remove(); };
 
