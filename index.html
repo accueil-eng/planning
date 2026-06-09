@@ -1463,7 +1463,7 @@ function showWhatsAppModal(){
       html += "<div style='display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #e0dbd3;border-radius:8px'>";
       html += "<div style='width:32px;height:32px;border-radius:50%;background:"+sal.color+";display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0'>"+(sal.prenom[0]+(sal.nom?sal.nom[0]:"")).toUpperCase()+"</div>";
       html += "<div style='flex:1;font-size:13px;font-weight:500'>"+sal.prenom+(sal.nom?" "+sal.nom:"")+"<div style='font-size:11px;color:#7a746c'>📱 +"+sal.whatsapp+"</div></div>";
-      html += "<a href='"+waUrl+"' target='_blank' style='height:32px;padding:0 12px;background:#25d366;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;text-decoration:none'>Envoyer ▶</a>";
+      html += "<a href='"+waUrl+"' target='_blank' rel='noopener' onclick='window.location.href=this.href;return false;' style='height:32px;padding:0 12px;background:#25d366;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;text-decoration:none'>Envoyer ▶</a>";
       html += "</div>";
     });
     html += "</div>";
