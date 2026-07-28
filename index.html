@@ -2474,16 +2474,14 @@ function RA(){
   el.innerHTML="";
 
   var today=new Date();today.setHours(0,0,0,0);
-  var currentMonthStart=new Date(today.getFullYear(),today.getMonth(),1);
-  var currentMonthKey=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0");
 
   var sorted=D.absences.slice().sort(function(a,b){return a.debut.localeCompare(b.debut);});
 
-  // Sépare absences futures/en cours (fin >= 1er du mois en cours) et passées
+  // Sépare absences futures/en cours (fin >= aujourd'hui) et passées (archivées dès le lendemain de leur fin)
   var current=[],past=[];
   sorted.forEach(function(abs){
     var finDate=pd(abs.fin);
-    if(finDate>=currentMonthStart) current.push(abs);
+    if(finDate>=today) current.push(abs);
     else past.push(abs);
   });
 
