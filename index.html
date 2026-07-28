@@ -945,42 +945,57 @@ window.addEventListener("beforeunload",function(e){
 // Construit une copie allégée, SANS données sensibles (salaires, téléphones, dates de
 // naissance, visites médicales...), destinée au dépôt PUBLIC pour que le lien WhatsApp
 // fonctionne sans que le destinataire ait besoin d'un token GitHub.
-function buildPublicSnapshot(){
-  var pubSalaries=(D.salaries||[]).map(function(s){
+function buildPublicSnapshot(src){
+  var S = src||D;
+  var pubSalaries=(S.salaries||[]).map(function(s){
     return {id:s.id,prenom:s.prenom,nom:s.nom,color:s.color,type:s.type,isBureau:s.isBureau,contratDebut:s.contratDebut,contratFin:s.contratFin};
   });
-  var pubChantiers=(D.chantiers||[]).map(function(c){
+  var pubChantiers=(S.chantiers||[]).map(function(c){
     return {id:c.id,ref:c.ref,nom:c.nom,adresse:c.adresse,color:c.color,done:c.done};
   });
-  var pubVehicules=(D.vehicules||[]).map(function(v){
+  var pubVehicules=(S.vehicules||[]).map(function(v){
     return {id:v.id,num:v.num,immat:v.immat,model:v.model};
   });
-  var pubAbsences=(D.absences||[]).map(function(a){
+  var pubAbsences=(S.absences||[]).map(function(a){
     return {id:a.id,salId:a.salId,debut:a.debut,fin:a.fin,type:a.type,heureDebut:a.heureDebut,heureFin:a.heureFin};
   });
-  var pubFormations=(D.formations||[]).map(function(f){
+  var pubFormations=(S.formations||[]).map(function(f){
     return {salId:f.salId,nextdeb:f.nextdeb,nextfin:f.nextfin};
   });
   return {
     chantiers:pubChantiers,salaries:pubSalaries,vehicules:pubVehicules,
-    absences:pubAbsences,formations:pubFormations,procedures:D.procedures||[],
-    cells:D.cells||{},rowChantiers:D.rowChantiers||{},livraisons:D.livraisons||{},
-    vehAssign:D.vehAssign||{},vehIndispo:D.vehIndispo||{}
+    absences:pubAbsences,formations:pubFormations,procedures:S.procedures||[],
+    cells:S.cells||{},rowChantiers:S.rowChantiers||{},livraisons:S.livraisons||{},
+    vehAssign:S.vehAssign||{},vehIndispo:S.vehIndispo||{}
   };
 }
 function _publishPublicSnapshot(){
   try{
-    var json = JSON.stringify(buildPublicSnapshot());
-    var encoded = btoa(unescape(encodeURIComponent(json)));
-    fetch(PUB_GH_API, {headers:{"Authorization":"token "+GH_TOKEN,"Accept":"application/vnd.github.v3+json"}})
-    .then(function(r){return r.status===404?null:r.json();})
-    .then(function(existing){
-      var body={message:"Update public planning snapshot",content:encoded};
-      if(existing&&existing.sha)body.sha=existing.sha;
-      return fetch(PUB_GH_API,{
-        method:"PUT",
-        headers:{"Authorization":"token "+GH_TOKEN,"Accept":"application/vnd.github.v3+json","Content-Type":"application/json"},
-        body:JSON.stringify(body)
+    // Relit les données privées fraîches avant de construire le snapshot, pour éviter
+    // qu'un onglet/appareil avec une copie en mémoire obsolète n'écrase la version
+    // publique avec des données moins récentes que celles réellement sauvegardées.
+    fetch(GH_API+"?t="+Date.now(), {headers:{"Authorization":"token "+GH_TOKEN,"Accept":"application/vnd.github.v3+json"}})
+    .then(function(r){return r.json();})
+    .then(function(fresh){
+      var srcD = D;
+      if(fresh&&fresh.content){
+        try{
+          var b64=fresh.content.split("\n").join("");
+          srcD = JSON.parse(decodeURIComponent(escape(atob(b64))));
+        }catch(e){console.log("Public snapshot: lecture fraiche impossible, utilisation de la memoire locale",e);}
+      }
+      var json = JSON.stringify(buildPublicSnapshot(srcD));
+      var encoded = btoa(unescape(encodeURIComponent(json)));
+      return fetch(PUB_GH_API, {headers:{"Authorization":"token "+GH_TOKEN,"Accept":"application/vnd.github.v3+json"}})
+      .then(function(r){return r.status===404?null:r.json();})
+      .then(function(existing){
+        var body={message:"Update public planning snapshot",content:encoded};
+        if(existing&&existing.sha)body.sha=existing.sha;
+        return fetch(PUB_GH_API,{
+          method:"PUT",
+          headers:{"Authorization":"token "+GH_TOKEN,"Accept":"application/vnd.github.v3+json","Content-Type":"application/json"},
+          body:JSON.stringify(body)
+        });
       });
     })
     .then(function(r){return r.json();})
