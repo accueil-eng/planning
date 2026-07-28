@@ -966,6 +966,7 @@ function _doGithubSave(){
 var _saveAgainNeeded=false;
 
 function save(){
+  if(_currentProfile==="planningpublic")return;
   checkPlanningChangeForNotif();
   // Always save to localStorage immediately
   localStorage.setItem(SK, JSON.stringify(D));
@@ -980,6 +981,7 @@ function save(){
 // Force an immediate save (bypasses the 2s debounce) — used for explicit "Enregistrer" actions
 // on fiches (chantier, salarié, etc.) to avoid data loss if the page is closed right after.
 function saveNow(){
+  if(_currentProfile==="planningpublic")return;
   checkPlanningChangeForNotif();
   localStorage.setItem(SK, JSON.stringify(D));
   clearTimeout(_saveTimer);
@@ -1225,6 +1227,7 @@ function _onGroupMouseUp(e){
   document.removeEventListener("mouseup",_onGroupMouseUp);
   if(_grpDragClone){_grpDragClone.remove();_grpDragClone=null;}
   document.querySelectorAll(".cell-c.drop-ok,.cell-c.drop-bad").forEach(function(cc){cc.classList.remove("drop-ok","drop-bad");});
+  if(_currentProfile==="planningpublic"){_grpDragCk=null;_grpDragIds=null;return;}
 
   var target=null;
   document.querySelectorAll(".cell-c[data-ck]").forEach(function(cc){
@@ -1405,6 +1408,7 @@ function closeVDropOutside(e){
   if(!e.target.closest(".vdrop"))document.querySelectorAll(".vdrop.on").forEach(function(d){d.classList.remove("on");});}
 function closeVDrop(){document.querySelectorAll(".vdrop.on").forEach(function(d){d.classList.remove("on");});}
 function assignVeh(ck,sId,vehId){
+  if(_currentProfile==="planningpublic")return;
   if(vehId===null){delete D.vehAssign["va|"+ck+"|"+sId];}
   else{D.vehAssign["va|"+ck+"|"+sId]=vehId;}
   closeVDrop();save();RP();
@@ -1494,11 +1498,11 @@ function mkLivCell(d){
     var sp=document.createElement("span");sp.className="cdot";sp.style.background=ch.color;chip.appendChild(sp);
     var nm=document.createElement("span");nm.style.cssText="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px";nm.textContent=(ch.ref?ch.ref+" - ":"")+ch.nom;chip.appendChild(nm);
     var rm=document.createElement("span");rm.className="crm";rm.textContent="×";
-    (function(key,i){rm.onclick=function(){D.livraisons[key]=(D.livraisons[key]||[]).filter(function(_,j){return j!==i;});save();RP();};})(lk,idx);
+    (function(key,i){rm.onclick=function(){if(_currentProfile==="planningpublic")return;D.livraisons[key]=(D.livraisons[key]||[]).filter(function(_,j){return j!==i;});save();RP();};})(lk,idx);
     chip.appendChild(rm);cc.appendChild(chip);
   });
   var ab=document.createElement("button");ab.className="liv-add";ab.textContent="＋ chantier";
-  (function(key,btn){ab.onclick=function(e){e.stopPropagation();openLivDD(key,btn);};})(lk,ab);
+  (function(key,btn){ab.onclick=function(e){e.stopPropagation();if(_currentProfile==="planningpublic")return;openLivDD(key,btn);};})(lk,ab);
   cc.appendChild(ab);return cc;
 }
 function mkUACell(d){
@@ -1508,7 +1512,7 @@ function mkUACell(d){
   lst.forEach(function(sal){
     var chip=document.createElement("div");chip.className="ua-chip";chip.style.cursor="grab";
     var nm=document.createElement("span");nm.className="cname";nm.textContent=sal.prenom+(sal.nom?" "+sal.nom[0]+".":"");chip.appendChild(nm);
-    chip.addEventListener("mousedown",(function(s){return function(e){e.preventDefault();e.stopPropagation();_startSalDrag(s.id,null,chip,e);};})(sal));
+    chip.addEventListener("mousedown",(function(s){return function(e){e.preventDefault();e.stopPropagation();if(_currentProfile==="planningpublic")return;_startSalDrag(s.id,null,chip,e);};})(sal));
 
     cc.appendChild(chip);
   });
@@ -1593,7 +1597,7 @@ function mkDC(ck,ri,di){
     var grpHandle=document.createElement("div");grpHandle.className="grp-handle";grpHandle.title="Glisser pour COPIER tout le groupe vers un autre jour";
     grpHandle.innerHTML="⠿⠿";
     grpHandle.style.cssText="position:absolute;top:-2px;right:-2px;font-size:9px;color:#9ca3af;background:#fff;border:1px solid #e2e8f0;border-radius:4px;padding:1px 3px;cursor:grab;z-index:2;line-height:1";
-    grpHandle.addEventListener("mousedown",function(e){e.preventDefault();e.stopPropagation();_startGroupDrag(ck,empIds.slice());});
+    grpHandle.addEventListener("mousedown",function(e){e.preventDefault();e.stopPropagation();if(_currentProfile==="planningpublic")return;_startGroupDrag(ck,empIds.slice());});
     cc.appendChild(grpHandle);
   }
   // + Salarié button with inline picker
@@ -1623,6 +1627,7 @@ function mkDC(ck,ri,di){
         var conf=getConf(sal.id,di,ck);
         if(conf.length){var warn=document.createElement("span");warn.style.cssText="font-size:10px;color:var(--red);margin-left:auto";warn.textContent="🔴 "+conf[0];row.appendChild(warn);}
         row.onclick=(function(s,cellKey,dayIdx){return function(){
+          if(_currentProfile==="planningpublic")return;
           var c2=getConf(s.id,dayIdx,cellKey);
           if(c2.length&&!confirm(s.prenom+(s.nom?" "+s.nom:"")+" est deja sur "+c2[0]+". Ajouter quand meme ?"))return;
           if(!D.cells[cellKey])D.cells[cellKey]=[];
@@ -1703,7 +1708,7 @@ function mkChip(eid,ck,di,idx,all){
   if(isLiv){var lico=document.createElement("span");lico.className="cico";lico.title="Aussi en livraison ce jour !";lico.textContent="🚚";top.appendChild(lico);}
   // Remove button
   var rm=document.createElement("button");rm.className="crm";rm.textContent="×";rm.title="Retirer du planning";
-  (function(cellKey,i){rm.onclick=function(e){e.stopPropagation();e.preventDefault();D.cells[cellKey]=(D.cells[cellKey]||[]).filter(function(_,j){return j!==i;});delete D.vehAssign["va|"+cellKey+"|"+eid];save();RP();};})(ck,idx);
+  (function(cellKey,i){rm.onclick=function(e){e.stopPropagation();e.preventDefault();if(_currentProfile==="planningpublic")return;D.cells[cellKey]=(D.cells[cellKey]||[]).filter(function(_,j){return j!==i;});delete D.vehAssign["va|"+cellKey+"|"+eid];save();RP();};})(ck,idx);
   top.appendChild(rm);
   wrap.appendChild(top);
 
@@ -1721,7 +1726,7 @@ function mkChip(eid,ck,di,idx,all){
   vBtn.appendChild(vtxt);
   if(veh||isPerso){
     var vrm=document.createElement("span");vrm.style.cssText="font-size:10px;color:var(--dim);padding:0 1px;cursor:pointer;margin-left:1px";vrm.title="Retirer le vehicule";vrm.textContent="×";
-    vrm.onclick=(function(cellKey){return function(e){e.stopPropagation();e.preventDefault();delete D.vehAssign["va|"+cellKey+"|"+eid];save();RP();};})(ck);
+    vrm.onclick=(function(cellKey){return function(e){e.stopPropagation();e.preventDefault();if(_currentProfile==="planningpublic")return;delete D.vehAssign["va|"+cellKey+"|"+eid];save();RP();};})(ck);
     vBtn.appendChild(vrm);
   }
   // Show chip-veh as clickable even without vehicle
@@ -1786,6 +1791,7 @@ function mkChip(eid,ck,di,idx,all){
   wrap.addEventListener("mousedown",function(e){
     if(e.target.closest(".chip-veh")||e.target.closest(".crm")||e.target.closest(".vdrop")||e.target.closest(".chip-handle"))return;
     e.preventDefault();e.stopPropagation();
+    if(_currentProfile==="planningpublic")return;
     _startSalDrag(eid,ck,wrap,e);
   });
 
@@ -1794,6 +1800,7 @@ function mkChip(eid,ck,di,idx,all){
   handle.innerHTML="⠿";
   handle.addEventListener("mousedown",function(e){
     e.preventDefault();e.stopPropagation();
+    if(_currentProfile==="planningpublic")return;
     _startStretch(eid,ck,e);
   });
   wrap.appendChild(handle);
@@ -1841,6 +1848,7 @@ function _onStretchUp(e){
   document.querySelectorAll(".cell-c.drop-ok,.cell-c.stretch-hover").forEach(function(cc){cc.classList.remove("drop-ok","stretch-hover");});
   if(!_stretching){_stretching=false;return;}
   _stretching=false;
+  if(_currentProfile==="planningpublic"){_stretchSid=null;_stretchCk=null;return;}
 
   // Find target cell
   var target=null;
@@ -1912,7 +1920,7 @@ function filterLivDD(){
   D.chantiers.filter(function(c){return !ex[c.id]&&!c.done&&(c.nom.toLowerCase().indexOf(q)>=0||(c.ref||"").toLowerCase().indexOf(q)>=0);}).forEach(function(ch){
     var item=document.createElement("div");item.className="ditem";
     item.innerHTML="<span style='width:8px;height:8px;border-radius:50%;background:"+ch.color+";flex-shrink:0;display:inline-block'></span>"+(ch.ref?"<b>"+ch.ref+"</b> – ":"")+ch.nom;
-    item.onclick=(function(id){return function(){if(!D.livraisons[curLivKey])D.livraisons[curLivKey]=[];D.livraisons[curLivKey].push(id);save();closeDD("liv");RP();};})(ch.id);
+    item.onclick=(function(id){return function(){if(_currentProfile==="planningpublic")return;if(!D.livraisons[curLivKey])D.livraisons[curLivKey]=[];D.livraisons[curLivKey].push(id);save();closeDD("liv");RP();};})(ch.id);
     dl.appendChild(item);
   });
   if(!dl.children.length){var e=document.createElement("div");e.className="dempty";e.textContent="Aucun résultat";dl.appendChild(e);}
