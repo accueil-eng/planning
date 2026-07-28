@@ -615,6 +615,9 @@ var GH_API = "https://api.github.com/repos/"+GH_REPO+"/contents/"+GH_FILE;
 var PUB_GH_REPO = "accueil-eng/planning";
 var PUB_GH_FILE = "public-data.json";
 var PUB_GH_API = "https://api.github.com/repos/"+PUB_GH_REPO+"/contents/"+PUB_GH_FILE;
+// Service intermédiaire sécurisé (Cloudflare Worker) pour les écritures salarié
+// (pointage, demandes d'absence, messages) sans exposer aucun token au navigateur.
+var WORKER_API = "https://fonteneau-planning-api.accueil-a81.workers.dev";
 var _ghPublicSha = null;
 var SK = "fonteneau_planning_v1";
 var _saveTimer = null;
@@ -770,16 +773,20 @@ function smartLoadFromCloud(cb){
 }
 setInterval(function(){
   smartLoadFromCloud(function(){
-    RP();RC();RS();RA();RV();updateAbsDemandesDot();updatePointageDot();updateMsgDot();
-    if(_currentProfile==="bureau"){
-      renderPtValidationsList();
-      renderPtModificationsList();
-      autoArchiveOldAbsDemandesSilent();
+    function afterAll(){
+      RP();RC();RS();RA();RV();updateAbsDemandesDot();updatePointageDot();updateMsgDot();
+      if(_currentProfile==="bureau"){
+        renderPtValidationsList();
+        renderPtModificationsList();
+        autoArchiveOldAbsDemandesSilent();
+      }
+      if(_currentProfile==="salarie"){renderMesDemandes();}
+      if(_currentTab==="messages")RMESSAGES();
+      if(_currentTab==="pointage")RPOINTAGE();
+      if(_currentTab==="monrtt")RMONRTT();
     }
-    if(_currentProfile==="salarie"){renderMesDemandes();}
-    if(_currentTab==="messages")RMESSAGES();
-    if(_currentTab==="pointage")RPOINTAGE();
-    if(_currentTab==="monrtt")RMONRTT();
+    if(_currentProfile==="salarie"){ loadMyPrivateData(afterAll); }
+    else { afterAll(); }
   });
 }, 30000);
 
@@ -787,8 +794,12 @@ setInterval(function(){
 setInterval(function(){
   if(_currentTab!=="messages")return;
   smartLoadFromCloud(function(){
-    updateMsgDot();
-    RMESSAGES();
+    if(_currentProfile==="salarie"){
+      loadMyPrivateData(function(){ updateMsgDot();RMESSAGES(); });
+    } else {
+      updateMsgDot();
+      RMESSAGES();
+    }
   });
 }, 15000);
 
@@ -798,6 +809,44 @@ setInterval(function(){
 
 // Lecture du planning PUBLIC (lien WhatsApp) — aucun token requis, lit le fichier allégé
 // directement depuis le dépôt public via le CDN raw.githubusercontent.com.
+// Récupère, via le service sécurisé (Worker), les données personnelles du salarié
+// connecté (messages, pointages, RTT, demandes d'absence) — jamais celles des autres.
+function loadMyPrivateData(cb){
+  if(!_salLockedId){ if(cb)cb(); return; }
+  fetch(WORKER_API+"/me?sal="+encodeURIComponent(_salLockedId)+"&t="+Date.now())
+  .then(function(r){ return r.json(); })
+  .then(function(mine){
+    if(mine&&!mine.error){
+      D.messages=mine.messages||[];
+      D.absDemandes=mine.absDemandes||[];
+      D.pointages=Object.assign({},D.pointages||{},mine.pointages||{});
+      D.rttReport=Object.assign({},D.rttReport||{},mine.rttReport||{});
+      D.rttManual=Object.assign({},D.rttManual||{},mine.rttManual||{});
+    } else if(mine&&mine.error){
+      console.log("Worker /me error:",mine.error);
+    }
+    if(cb)cb();
+  })
+  .catch(function(e){ console.log("Worker /me fetch error:",e); if(cb)cb(); });
+}
+// Envoie au service sécurisé les pointages/demandes/messages du salarié pour qu'ils
+// soient fusionnés dans les vraies données privées (aucun token exposé au navigateur).
+function syncMyPrivateData(){
+  if(!_salLockedId)return;
+  fetch(WORKER_API+"/sync",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      salId:_salLockedId,
+      pointages:D.pointages||{},
+      absDemandes:(D.absDemandes||[]).filter(function(a){return a.salId===_salLockedId;}),
+      messages:(D.messages||[]).filter(function(m){return m.from===_salLockedId;})
+    })
+  })
+  .then(function(r){return r.json();})
+  .then(function(res){ if(res&&res.error)console.log("Worker /sync error:",res.error); })
+  .catch(function(e){ console.log("Worker /sync fetch error:",e); });
+}
 function loadPublicPlanning(cb){
   var url="https://raw.githubusercontent.com/"+PUB_GH_REPO+"/main/"+PUB_GH_FILE+"?t="+Date.now();
   fetch(url)
@@ -1067,8 +1116,13 @@ function save(){
   checkPlanningChangeForNotif();
   // Always save to localStorage immediately
   localStorage.setItem(SK, JSON.stringify(D));
-  // Debounce GitHub save
   clearTimeout(_saveTimer);
+  if(_currentProfile==="salarie"){
+    // Les salariés n'ont pas de token : on passe par le service sécurisé (Worker).
+    _saveTimer = setTimeout(function(){ syncMyPrivateData(); }, 2000);
+    return;
+  }
+  // Debounce GitHub save
   _saveTimer = setTimeout(function(){
     if(_pendingSaveCount>0){_saveAgainNeeded=true;return;} // a save is already in flight, queue another after it completes
     _doGithubSave();
@@ -1082,6 +1136,10 @@ function saveNow(){
   checkPlanningChangeForNotif();
   localStorage.setItem(SK, JSON.stringify(D));
   clearTimeout(_saveTimer);
+  if(_currentProfile==="salarie"){
+    syncMyPrivateData();
+    return;
+  }
   if(_pendingSaveCount>0){_saveAgainNeeded=true;return;}
   _doGithubSave();
 }
@@ -1172,20 +1230,24 @@ function TAB(n){
       ptAnnee.value=now.getFullYear();
     }
     RPOINTAGE(); // Affichage immédiat avec données locales
-    loadFromCloud(function(){
-      RPOINTAGE(); // Re-rendu avec données fraîches de GitHub
-      if(_currentProfile==="bureau"){renderPtValidationsList();renderPtModificationsList();}
-    });
+    if(_currentProfile==="salarie"){
+      loadMyPrivateData(function(){ RPOINTAGE(); });
+    } else {
+      loadFromCloud(function(){
+        RPOINTAGE(); // Re-rendu avec données fraîches de GitHub
+        if(_currentProfile==="bureau"){renderPtValidationsList();renderPtModificationsList();}
+      });
+    }
   }
   // Auto-sync when opening RDV tab
   if(n==="rdv"){loadFromCloud(function(){RRDV();});}
   if(n==="gantt"){RGANTT();}
   if(n==="bilan"){RBILAN();}
   if(n==="rttrecap"){RRTTRECAP();}
-  if(n==="absdemande"){RABSDEMANDE();if(_currentProfile==="salarie")loadFromCloud(function(){renderMesDemandes();});}
-  if(n==="monrtt"){loadFromCloud(function(){RMONRTT();});}
+  if(n==="absdemande"){RABSDEMANDE();if(_currentProfile==="salarie")loadMyPrivateData(function(){renderMesDemandes();});}
+  if(n==="monrtt"){if(_currentProfile==="salarie")loadMyPrivateData(function(){RMONRTT();});else loadFromCloud(function(){RMONRTT();});}
   if(n==="urgences"){RURGENCES();}
-  if(n==="messages"){loadFromCloud(function(){RMESSAGES();});}
+  if(n==="messages"){if(_currentProfile==="salarie")loadMyPrivateData(function(){RMESSAGES();});else loadFromCloud(function(){RMESSAGES();});}
 }
 
 window.addEventListener("load",function(){
@@ -2966,15 +3028,17 @@ function showPinHashTool(){
     applyProfile("salarie");
     // Charger le planning public (pas besoin de token) pour que Planning/Urgences soient à jour.
     loadPublicPlanning(function(){
-      applyProfile("salarie");
-      setTimeout(function(){
-        // Appel direct RPOINTAGE après chargement pour éviter double loadFromCloud
-        var pg=document.getElementById("pg-pointage");
-        if(pg)pg.classList.add("on");
-        var salSel=document.getElementById("salarie-tab-select");
-        if(salSel)salSel.value="pointage";
-        RPOINTAGE();
-      },200);
+      loadMyPrivateData(function(){
+        applyProfile("salarie");
+        setTimeout(function(){
+          // Appel direct RPOINTAGE après chargement pour éviter double loadFromCloud
+          var pg=document.getElementById("pg-pointage");
+          if(pg)pg.classList.add("on");
+          var salSel=document.getElementById("salarie-tab-select");
+          if(salSel)salSel.value="pointage";
+          RPOINTAGE();
+        },200);
+      });
     });
     return;
   }
