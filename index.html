@@ -2549,11 +2549,33 @@ function RA(){
       byMonthPast[mk].push(abs);
     });
     // Plus récent en premier pour les archives
-    monthOrderPast.reverse().forEach(function(mk){
+    monthOrderPast.reverse();
+    var VISIBLE_PAST_MONTHS=3;
+    var recentMonths=monthOrderPast.slice(0,VISIBLE_PAST_MONTHS);
+    var olderMonths=monthOrderPast.slice(VISIBLE_PAST_MONTHS);
+    recentMonths.forEach(function(mk){
       var parts=mk.split("-");
       var lbl=MOIS[parseInt(parts[1])-1]+" "+parts[0];
       el.appendChild(makeMonthSection(lbl,byMonthPast[mk],false,true));
     });
+    if(olderMonths.length){
+      var olderCount=olderMonths.reduce(function(sum,mk){return sum+byMonthPast[mk].length;},0);
+      var moreWrap=document.createElement("div");moreWrap.id="abs-older-wrap";
+      var moreBtn=document.createElement("button");
+      moreBtn.className="btn";
+      moreBtn.style.cssText="font-size:11px;width:100%;margin-bottom:10px;background:#f8fafc;color:#64748b";
+      moreBtn.textContent="Voir plus d'archives ("+olderMonths.length+" mois, "+olderCount+" absence(s))";
+      moreBtn.onclick=function(){
+        moreBtn.remove();
+        olderMonths.forEach(function(mk){
+          var parts=mk.split("-");
+          var lbl=MOIS[parseInt(parts[1])-1]+" "+parts[0];
+          moreWrap.appendChild(makeMonthSection(lbl,byMonthPast[mk],false,true));
+        });
+      };
+      moreWrap.appendChild(moreBtn);
+      el.appendChild(moreWrap);
+    }
   }
 
   if(!current.length&&!past.length){
