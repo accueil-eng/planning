@@ -1151,7 +1151,7 @@ function isOutOfContract(sId,di){
   if(sal.contratFin&&d>pd(sal.contratFin))return true;
   return false;
 }
-function allAbsDay(di){var d=wd(CW)[di];var seen={};var r=[];D.absences.forEach(function(a){if(pd(a.debut)<=d&&d<=pd(a.fin)){var s=D.salaries.find(function(x){return x.id===a.salId;});if(s&&!seen[s.id]){seen[s.id]=1;r.push(Object.assign({},s,{absType:a.type,absHeureDebut:a.heureDebut,absHeureFin:a.heureFin}));}}});(D.formations||[]).forEach(function(f){if(f.nextdeb&&f.nextfin&&pd(f.nextdeb)<=d&&d<=pd(f.nextfin)){var s=D.salaries.find(function(x){return x.id===f.salId;});if(s&&!seen[s.id]){seen[s.id]=1;r.push(Object.assign({},s,{absType:"formation"}));}}});return r;}
+function allAbsDay(di){var d=wd(CW)[di];var seen={};var r=[];D.absences.forEach(function(a){if(pd(a.debut)<=d&&d<=pd(a.fin)&&!isOutOfContract(a.salId,di)){var s=D.salaries.find(function(x){return x.id===a.salId;});if(s&&!seen[s.id]){seen[s.id]=1;r.push(Object.assign({},s,{absType:a.type,absHeureDebut:a.heureDebut,absHeureFin:a.heureFin}));}}});(D.formations||[]).forEach(function(f){if(f.nextdeb&&f.nextfin&&pd(f.nextdeb)<=d&&d<=pd(f.nextfin)&&!isOutOfContract(f.salId,di)){var s=D.salaries.find(function(x){return x.id===f.salId;});if(s&&!seen[s.id]){seen[s.id]=1;r.push(Object.assign({},s,{absType:"formation"}));}}});return r;}
 function isAssDay(sId,di){var n=getNR();for(var r=0;r<n;r++)if((D.cells[CW+"|"+r+"|"+di]||[]).indexOf(sId)>=0)return true;return false;}
 function getConf(sId,di,excKey){var n=getNR();var r=[];for(var i=0;i<n;i++){var ck=CW+"|"+i+"|"+di;if(ck!==excKey&&(D.cells[ck]||[]).indexOf(sId)>=0){var ch=GRC(CW+"|"+i);r.push(ch?ch.nom:"Ch."+(i+1));}}return r;}
 function unasgDay(di){
