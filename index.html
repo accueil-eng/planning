@@ -175,6 +175,7 @@ body.profile-salarie .tabs{display:none}
 .abs-badge.rtt{background:var(--acc-bg);color:#1d4ed8;border:1px solid #93c5fd}
 .abs-badge.maladie{background:var(--warn-bg);color:#92400e;border:1px solid #fde68a}
 .abs-badge.autre{background:var(--s2);color:var(--muted);border:1px solid var(--brd)}
+.abs-badge.recup{background:#ede9fe;color:#6d28d9;border:1px solid #c4b5fd}
 /* VEH TABLE */
 .veh-table{width:100%;border-collapse:collapse;background:var(--surf);border-radius:var(--r);overflow:hidden;border:1px solid var(--brd)}
 .veh-table th{background:#e2e8f0;color:#334155;font-family:"Syne",sans-serif;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.06em;padding:8px 10px;text-align:left;border-bottom:2px solid #94a3b8}
@@ -310,7 +311,7 @@ body.profile-salarie .tabs{display:none}
       <option value="formation">Formation</option>
       <option value="cp">Congés payés</option><option value="intemperies">Intempéries</option>
       <option value="css">Congés sans solde</option><option value="formation">Formation</option>
-      <option value="rtt">RTT</option><option value="maladie">Arrêt maladie</option><option value="autre">Autre</option>
+      <option value="rtt">RTT</option><option value="maladie">Arrêt maladie</option><option value="recup">Récupération</option><option value="autre">Autre</option>
     </select>
     <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#7a746c">De <input type="time" id="abhd" style="width:90px"></label>
     <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#7a746c">à <input type="time" id="abhf" style="width:90px"></label>
@@ -510,6 +511,7 @@ body.profile-salarie .tabs{display:none}
         <option value="cp">Congés payés</option>
         <option value="css">Congés sans solde</option>
         <option value="rtt">RTT</option>
+        <option value="recup">Récupération</option>
         <option value="autre">Autre</option>
       </select>
     </div>
@@ -601,7 +603,7 @@ body.profile-salarie .tabs{display:none}
 
 <script>
 var COLORS=["#2563eb","#16a34a","#dc2626","#d97706","#7c3aed","#db2777","#0891b2","#65a30d","#9333ea","#ea580c","#0d9488","#be185d","#4338ca","#b45309","#0f766e"];
-var ABLBLS={cp:"Congés payés",intemperies:"Intempéries",css:"Congés sans solde",formation:"Formation",rtt:"RTT",maladie:"Arrêt maladie",autre:"Autre"};
+var ABLBLS={cp:"Congés payés",intemperies:"Intempéries",css:"Congés sans solde",formation:"Formation",rtt:"RTT",maladie:"Arrêt maladie",recup:"Récupération",autre:"Autre"};
 var ABABBR={cp:"CP",intemperies:"INT",css:"CSS",formation:"FOR",rtt:"RTT",maladie:"AM",autre:"AUT"};
 var DN=["Lundi","Mardi","Mercredi","Jeudi","Vendredi"];
 // ── GITHUB SYNC ──
@@ -2431,6 +2433,7 @@ function showGroupAbsModal(){
     "<option value='css'>Congés sans solde</option>"+
     "<option value='formation'>Formation</option>"+
     "<option value='maladie'>Arrêt maladie</option>"+
+    "<option value='recup'>Récupération</option>"+
     "<option value='autre'>Autre</option>"+
     "</select></div>"+
     "<div style='display:flex;gap:10px;margin-bottom:16px'>"+
