@@ -766,7 +766,7 @@ function smartLoadFromCloud(cb){
   if(_pendingSaveCount>0){return;} // ne pas charger si une sauvegarde est en cours
   if(_saveTimer){return;} // ne pas charger si une sauvegarde est en attente (debounce)
   _lastCloudLoad=now;
-  loadFromCloud(cb);
+  loadForCurrentProfile(cb);
 }
 setInterval(function(){
   smartLoadFromCloud(function(){
@@ -813,6 +813,15 @@ function loadPublicPlanning(cb){
     if(cb)cb();
   })
   .catch(function(e){ console.log("Public planning load error:",e); if(cb)cb(); });
+}
+// Choisit automatiquement la lecture publique (sans token, pour Salarié / lien public)
+// ou la lecture privée complète (Bureau / Analyse, avec token).
+function loadForCurrentProfile(cb){
+  if(_currentProfile==="salarie"||_currentProfile==="planningpublic"){
+    loadPublicPlanning(cb);
+  } else {
+    loadFromCloud(cb);
+  }
 }
 function loadFromCloud(cb){
   // Paramètre timestamp pour éviter le cache navigateur et CDN GitHub
@@ -954,7 +963,7 @@ function buildPublicSnapshot(){
   });
   return {
     chantiers:pubChantiers,salaries:pubSalaries,vehicules:pubVehicules,
-    absences:pubAbsences,formations:pubFormations,
+    absences:pubAbsences,formations:pubFormations,procedures:D.procedures||[],
     cells:D.cells||{},rowChantiers:D.rowChantiers||{},livraisons:D.livraisons||{},
     vehAssign:D.vehAssign||{},vehIndispo:D.vehIndispo||{}
   };
@@ -2940,8 +2949,8 @@ function showPinHashTool(){
   if(urlParams.get("sal")){
     _salLockedId=urlParams.get("sal");
     applyProfile("salarie");
-    // Forcer le chargement depuis GitHub pour avoir les dernières données
-    loadFromCloud(function(){
+    // Charger le planning public (pas besoin de token) pour que Planning/Urgences soient à jour.
+    loadPublicPlanning(function(){
       applyProfile("salarie");
       setTimeout(function(){
         // Appel direct RPOINTAGE après chargement pour éviter double loadFromCloud
