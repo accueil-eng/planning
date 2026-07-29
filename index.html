@@ -389,6 +389,7 @@ body.profile-salarie .tabs{display:none}
     <select id="gantt-sel" style="min-width:220px;height:34px;border:1px solid var(--brd2);border-radius:var(--rs);padding:0 10px;font-size:13px;background:var(--bg);color:var(--txt);outline:none" onchange="RGANTT()">
       <option value="">Tous les chantiers</option>
     </select>
+    <button class="btn btn-o" style="font-size:12px" onclick="printGanttAnnuel()">🖨️ Imprimer</button>
   </div>
   <div style="margin-bottom:8px">
     <button class="btn btn-p" onclick="addChantierFromGantt()" style="font-size:12px">+ Nouveau chantier</button>
@@ -489,6 +490,7 @@ body.profile-salarie .tabs{display:none}
       <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="bilan-inc-intemp" checked onchange="RBILAN()" style="cursor:pointer">Intempéries</label>
     </div>
     <button class="btn btn-p" onclick="exportBilanCSV()" style="background:#16a34a;border-color:#16a34a">📥 Export Excel</button>
+    <button class="btn btn-o" onclick="printBilanAnnuel()">🖨️ Imprimer</button>
   </div>
   <div id="bilan-wrap" style="overflow-x:auto"></div>
 </div>
@@ -499,6 +501,7 @@ body.profile-salarie .tabs{display:none}
     <select id="rttrecap-annee" style="height:34px;border:1px solid var(--brd2);border-radius:var(--rs);padding:0 10px;font-size:13px;background:var(--bg);color:var(--txt);outline:none" onchange="RRTTRECAP()">
     </select>
     <button class="btn btn-p" onclick="exportRTTRecapCSV()" style="background:#16a34a;border-color:#16a34a">📥 Export Excel</button>
+    <button class="btn btn-o" onclick="printRttRecapAnnuel()">🖨️ Imprimer</button>
   </div>
   <div id="rttrecap-wrap" style="overflow-x:auto"></div>
 </div>
@@ -2793,6 +2796,43 @@ function printVisitesMedicales(){
     h+="</body></html>";
     openPrintWindow(h);
   });
+}
+// Imprime le contenu déjà affiché d'un conteneur (tableau généré), avec logo + titre.
+// Neutralise les champs de saisie (affichés comme du texte simple à l'impression).
+function printTabContent(wrapId,title,subtitle){
+  var wrap=document.getElementById(wrapId);
+  if(!wrap){showToast("⚠️ Rien à imprimer.");return;}
+  var h="<!DOCTYPE html><html><head><meta charset='utf-8'>";
+  h+="<title>"+title+" — Fonteneau Rénovation</title>";
+  h+="<style>body{font-family:Arial,sans-serif;font-size:11px;margin:20px}";
+  h+="h1{font-size:16px;margin:0 0 4px}h2{font-size:12px;color:#555;margin:0 0 16px;font-weight:normal}";
+  h+="table{border-collapse:collapse}";
+  h+="input,select{border:none!important;background:transparent!important;font:inherit;color:inherit;text-align:center;pointer-events:none;-webkit-appearance:none;appearance:none}";
+  h+="button{display:none!important}";
+  h+="@media print{body{margin:8px}}</style></head><body>";
+  h+="<img src='"+APP_LOGO_DATAURI+"' style='height:55px;margin-bottom:10px' alt='Logo'>";
+  h+="<h1>"+title+"</h1>";
+  h+="<h2>"+(subtitle?subtitle+" — ":"")+"Imprimé le "+new Date().toLocaleDateString("fr-FR")+"</h2>";
+  h+=wrap.innerHTML;
+  h+="<p style='font-size:9px;color:#888;margin-top:20px'>Fonteneau Rénovation — Document généré automatiquement</p>";
+  h+="</body></html>";
+  openPrintWindow(h);
+}
+function printGanttAnnuel(){
+  var ds=document.getElementById("gantt-date-start"),de=document.getElementById("gantt-date-end");
+  var fmt=function(v){return v?new Date(v).toLocaleDateString("fr-FR"):"";};
+  var sub=ds&&de?("Du "+fmt(ds.value)+" au "+fmt(de.value)):"";
+  printTabContent("gantt-wrap","📅 Planning annuel",sub);
+}
+function printBilanAnnuel(){
+  var yEl=document.getElementById("bilan-annee");
+  var sub=yEl?("Année "+yEl.value):"";
+  printTabContent("bilan-wrap","📊 Bilan heures chantiers",sub);
+}
+function printRttRecapAnnuel(){
+  var yEl=document.getElementById("rttrecap-annee");
+  var sub=yEl?("Année "+yEl.value):"";
+  printTabContent("rttrecap-wrap","🕐 Récapitulatif RTT",sub);
 }
 function printVehicules(){
   var h="<!DOCTYPE html><html><head><meta charset='utf-8'>";
