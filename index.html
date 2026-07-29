@@ -652,7 +652,7 @@ if(!D.grille)D.grille={
   trajet:{Z1A:0,Z1B:0,Z2:0,Z3:0,Z4:0,Z5:0,Z6:0,Z7:0,Z8:0,Z9:0,Z10:0},
   transport:{Z1A:0,Z1B:0,Z2:0,Z3:0,Z4:0,Z5:0,Z6:0,Z7:0,Z8:0,Z9:0,Z10:0}
 };
-["cells","rowChantiers","livraisons","vehAssign","vehIndispo","rttReport","ptReview","planningNotifSent","ptWeekValidations","rttManual","chHoursValidated","bureauWeekValidations","ptObservations","bilanManual"].forEach(function(k){if(!D[k])D[k]={};});
+["cells","rowChantiers","livraisons","vehAssign","vehIndispo","rttReport","ptReview","planningNotifSent","ptWeekValidations","rttManual","chHoursValidated","bureauWeekValidations","ptObservations","bilanManual","ptUnlockOverrides"].forEach(function(k){if(!D[k])D[k]={};});
 
 var DEFAULT_PROCEDURES=[
   {id:"proc_canicule",titre:"🌡️ Canicule / Fortes chaleurs",couleur:"#dc2626",etapes:[
@@ -876,7 +876,7 @@ function loadPublicPlanning(cb){
     if(!pub){ if(cb)cb(); return; }
     D = pub;
     ["chantiers","salaries","absences","vehicules","formations","rdvs"].forEach(function(k){if(!D[k])D[k]=[];});
-    ["cells","rowChantiers","livraisons","vehAssign","vehIndispo","rttReport","ptReview","planningNotifSent","ptWeekValidations","rttManual","chHoursValidated","bureauWeekValidations","ptObservations","bilanManual"].forEach(function(k){if(!D[k])D[k]={};});
+    ["cells","rowChantiers","livraisons","vehAssign","vehIndispo","rttReport","ptReview","planningNotifSent","ptWeekValidations","rttManual","chHoursValidated","bureauWeekValidations","ptObservations","bilanManual","ptUnlockOverrides"].forEach(function(k){if(!D[k])D[k]={};});
     if(!D.absDemandes)D.absDemandes=[];
     if(!D.pointages)D.pointages={};
     if(!D.grille)D.grille={trajet:{},transport:{}};
@@ -927,7 +927,7 @@ function loadFromCloud(cb){
         }
         D = remote;
         ["chantiers","salaries","absences","vehicules","formations","rdvs"].forEach(function(k){if(!D[k])D[k]=[];});
-        ["cells","rowChantiers","livraisons","vehAssign","vehIndispo","rttReport","ptReview","planningNotifSent","ptWeekValidations","rttManual","chHoursValidated","bureauWeekValidations","ptObservations","bilanManual"].forEach(function(k){if(!D[k])D[k]={};});
+        ["cells","rowChantiers","livraisons","vehAssign","vehIndispo","rttReport","ptReview","planningNotifSent","ptWeekValidations","rttManual","chHoursValidated","bureauWeekValidations","ptObservations","bilanManual","ptUnlockOverrides"].forEach(function(k){if(!D[k])D[k]={};});
 if(!D.absDemandes)D.absDemandes=[];
         if(!D.pointages)D.pointages={};
         if(!D.grille)D.grille={trajet:{},transport:{}};
@@ -1248,7 +1248,7 @@ function importJSON(ev){
       if(!confirm("Remplacer toutes les données par cette sauvegarde ?"))return;
       D=data;
       ["chantiers","salaries","absences","vehicules"].forEach(function(k){if(!D[k])D[k]=[];});
-      ["cells","rowChantiers","livraisons","vehAssign","vehIndispo","rttReport","ptReview","planningNotifSent","ptWeekValidations","rttManual","chHoursValidated","bureauWeekValidations","ptObservations","bilanManual"].forEach(function(k){if(!D[k])D[k]={};});
+      ["cells","rowChantiers","livraisons","vehAssign","vehIndispo","rttReport","ptReview","planningNotifSent","ptWeekValidations","rttManual","chHoursValidated","bureauWeekValidations","ptObservations","bilanManual","ptUnlockOverrides"].forEach(function(k){if(!D[k])D[k]={};});
 if(!D.absDemandes)D.absDemandes=[];
       save();RP();RC();RS();RA();RV();RF();RRDV();RANALYSE();RGANTT();RPOINTAGE();RINDEM();
     }catch(err){alert("Fichier invalide: "+err.message);}
@@ -6672,9 +6672,11 @@ function RPOINTAGE(){
       if(uvBtn)(function(w){uvBtn.addEventListener("click",function(){unvalidateBureauWeek(bv.salId,w,bv.annee);});})(wk);
       if(lwkBtn)(function(w){lwkBtn.addEventListener("click",function(){lockWeek(bv.salId,w,bv.mois,bv.annee);});})(wk);
       if(unwkBtn)(function(w){unwkBtn.addEventListener("click",function(){unlockWeek(bv.salId,w,bv.mois,bv.annee);});})(wk);
-      // Lock inputs for locked weeks (week lock OR bureau validation)
+      // Lock inputs for locked weeks (week lock OR bureau validation) — sauf exception explicite de déverrouillage
       var lockKey="ptLock|"+bv.mois+"|"+bv.annee+"|"+wk+"|"+bv.salId;
-      var wkLocked=!!(D.ptLocks&&(D.ptLocks[lockKey]||D.ptLocks["ptLock|"+bv.mois+"|"+bv.annee]));
+      var overrideKey=bv.salId+"|"+wk+"|"+bv.mois+"|"+bv.annee;
+      var hasOverride=!!(D.ptUnlockOverrides&&D.ptUnlockOverrides[overrideKey]);
+      var wkLocked=!hasOverride&&!!(D.ptLocks&&(D.ptLocks[lockKey]||D.ptLocks["ptLock|"+bv.mois+"|"+bv.annee]||D.ptLocks["ptLock|"+bv.mois+"|"+bv.annee+"|"+bv.salId]));
       var bureauKey=bv.salId+"|"+wk+"|"+bv.annee;
       var bureauValidated=!!(D.bureauWeekValidations&&D.bureauWeekValidations[bureauKey]);
       var wrap=document.getElementById("pointage-wrap");
@@ -6701,6 +6703,9 @@ function RPOINTAGE(){
     if(isPointageLocked(filterId,mois,annee)){
       var wrap2=document.getElementById("pointage-wrap");
       if(wrap2)wrap2.querySelectorAll("[data-pt]").forEach(function(inp){
+        var p2=inp.dataset.pt.split("|");
+        var ovKey=p2[3]+"|"+p2[4]+"|"+mois+"|"+annee;
+        if(D.ptUnlockOverrides&&D.ptUnlockOverrides[ovKey])return; // exception : cette semaine reste modifiable
         inp.disabled=true;inp.style.opacity="0.5";inp.style.cursor="not-allowed";
         inp.title="Pointage verrouillé par le Bureau";
       });
@@ -6716,6 +6721,9 @@ function RPOINTAGE(){
       var wrapL=document.getElementById("pointage-wrap");
       if(wrapL){
         wrapL.querySelectorAll("[data-pt]").forEach(function(inp){
+          var p3=inp.dataset.pt.split("|");
+          var ovKey2=p3[3]+"|"+p3[4]+"|"+mois+"|"+annee;
+          if(D.ptUnlockOverrides&&D.ptUnlockOverrides[ovKey2])return; // exception : cette semaine reste modifiable
           inp.disabled=true;inp.style.opacity="0.5";inp.style.cursor="not-allowed";
           inp.title="Pointage verrouillé";
         });
@@ -6942,8 +6950,11 @@ function unvalidateBureauWeek(salId,semaine,annee){
 
 function lockWeek(salId,semaine,mois,annee){
   if(!D.ptLocks)D.ptLocks={};
+  if(!D.ptUnlockOverrides)D.ptUnlockOverrides={};
   var lockKey="ptLock|"+mois+"|"+annee+"|"+semaine+"|"+salId;
+  var overrideKey=salId+"|"+semaine+"|"+mois+"|"+annee;
   D.ptLocks[lockKey]={salId:salId,semaine:semaine,mois:mois,annee:annee,ts:Date.now()};
+  delete D.ptUnlockOverrides[overrideKey]; // reverrouiller annule une éventuelle exception précédente
   save();
   showToast("🔒 Semaine S"+semaine+" verrouillée !");
   RPOINTAGE();
@@ -6951,8 +6962,13 @@ function lockWeek(salId,semaine,mois,annee){
 
 function unlockWeek(salId,semaine,mois,annee){
   if(!D.ptLocks)D.ptLocks={};
+  if(!D.ptUnlockOverrides)D.ptUnlockOverrides={};
   var lockKey="ptLock|"+mois+"|"+annee+"|"+semaine+"|"+salId;
+  var overrideKey=salId+"|"+semaine+"|"+mois+"|"+annee;
   delete D.ptLocks[lockKey];
+  // Exception explicite : rend cette semaine modifiable même si le mois entier est verrouillé
+  // par ailleurs (verrou global ou verrou "tout le mois" pour ce salarié).
+  D.ptUnlockOverrides[overrideKey]=true;
   save();
   showToast("🔓 Semaine S"+semaine+" déverrouillée !");
   RPOINTAGE();
