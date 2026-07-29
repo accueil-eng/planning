@@ -2595,34 +2595,20 @@ function addRdv(vId,type,date,note){var v=D.vehicules.find(function(x){return x.
 function delRdv(vId,rId){var v=D.vehicules.find(function(x){return x.id===vId;});if(!v)return;v.rdvs=(v.rdvs||[]).filter(function(r){return r.id!==rId;});syncRdv();RV();}
 function upVeh(id,f,val){var veh=D.vehicules.find(function(x){return x.id===id;});if(!veh)return;veh[f]=val;save();RV();}
 function printVehicules(){
-  var fmt=function(n){return n?pd(n).toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric"}):"—";};
-  var RLBL={vidange:"Vidange",ct:"CT",antipol:"Anti-pol.",garage:"Garage",autre:"Autre"};
   var h="<!DOCTYPE html><html><head><meta charset='utf-8'>";
   h+="<title>Liste des véhicules — Fonteneau Rénovation</title>";
-  h+="<style>body{font-family:Arial,sans-serif;font-size:12px;margin:20px}";
+  h+="<style>body{font-family:Arial,sans-serif;font-size:13px;margin:20px}";
   h+="h1{font-size:17px;margin:0 0 4px}h2{font-size:12px;color:#555;margin:0 0 18px;font-weight:normal}";
   h+="table{border-collapse:collapse;width:100%}";
-  h+="th,td{border:1px solid #ccc;padding:6px 8px;text-align:left}";
-  h+="th{background:#1a1916;color:#fff;font-size:11px}";
+  h+="th,td{border:1px solid #ccc;padding:8px 10px;text-align:left}";
+  h+="th{background:#1a1916;color:#fff;font-size:12px}";
   h+="tr:nth-child(even){background:#f8f8f8}";
-  h+=".late{color:#b91c1c;font-weight:700}.soon{color:#b45309;font-weight:600}";
   h+="@media print{body{margin:10px}}</style></head><body>";
   h+="<h1>🚐 Liste des véhicules — Fonteneau Rénovation</h1>";
   h+="<h2>Imprimé le "+new Date().toLocaleDateString("fr-FR")+"</h2>";
-  h+="<table><thead><tr><th>N°</th><th>Immatriculation</th><th>Modèle</th>";
-  h+="<th>Dern. vidange</th><th>Proch. vidange</th><th>Dern. CT</th><th>Proch. CT</th>";
-  h+="<th>Dern. anti-pol.</th><th>Proch. anti-pol.</th><th>RDV à venir</th></tr></thead><tbody>";
+  h+="<table><thead><tr><th>N°</th><th>Immatriculation</th><th>Modèle</th></tr></thead><tbody>";
   D.vehicules.forEach(function(v){
-    var nv=nD(v.vidange,12),nc=nD(v.ct,24),na=nD(v.antipol,12);
-    var sv=vStat(nv),sc=vStat(nc),sa=vStat(na);
-    var rdvTxt=(v.rdvs||[]).map(function(r){
-      return (RLBL[r.type]||r.type)+" "+pd(r.date).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})+(r.note?" ("+r.note+")":"");
-    }).join(", ")||"—";
-    h+="<tr><td><b>"+(v.num||"—")+"</b></td><td>"+(v.immat||"—")+"</td><td>"+(v.model||"—")+"</td>";
-    h+="<td>"+fmt(v.vidange)+"</td><td class='"+(sv.cls||"")+"'>"+fmt(nv)+"</td>";
-    h+="<td>"+fmt(v.ct)+"</td><td class='"+(sc.cls||"")+"'>"+fmt(nc)+"</td>";
-    h+="<td>"+fmt(v.antipol)+"</td><td class='"+(sa.cls||"")+"'>"+fmt(na)+"</td>";
-    h+="<td>"+rdvTxt+"</td></tr>";
+    h+="<tr><td><b>"+(v.num||"—")+"</b></td><td>"+(v.immat||"—")+"</td><td>"+(v.model||"—")+"</td></tr>";
   });
   h+="</tbody></table>";
   h+="<p style='font-size:10px;color:#888;margin-top:20px'>Fonteneau Rénovation — Document généré automatiquement</p>";
