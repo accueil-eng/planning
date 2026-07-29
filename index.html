@@ -2418,14 +2418,16 @@ function showQRCode(salId){
     "</div>"+
     "<div style='font-size:10px;color:#9ca3af;word-break:break-all;margin-bottom:14px;background:#f8f7f4;padding:8px;border-radius:6px'>"+link+"</div>"+
     "<div style='display:flex;gap:8px'>"+
-    "<button onclick=\"printQRCode("+JSON.stringify(sal.prenom+(sal.nom?" "+sal.nom:""))+","+JSON.stringify(qrImgUrl)+")\" style='flex:1;height:36px;background:#0891b2;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer'>🖨️ Imprimer</button>"+
-    "<button onclick=\"document.getElementById('qr-modal').remove()\" style='height:36px;padding:0 20px;background:#1a1916;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer'>Fermer</button>"+
+    "<button id='qr-print-btn' style='flex:1;height:36px;background:#0891b2;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer'>🖨️ Imprimer</button>"+
+    "<button id='qr-close-btn' style='height:36px;padding:0 20px;background:#1a1916;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer'>Fermer</button>"+
     "</div>";
   modal.appendChild(box);document.body.appendChild(modal);
   modal.onclick=function(e){if(e.target===modal)modal.remove();};
+  document.getElementById("qr-print-btn").onclick=function(){printQRCode();};
+  document.getElementById("qr-close-btn").onclick=function(){modal.remove();};
 }
 
-function printQRCode(nom,qrImgUrl){
+function printQRCode(){
   // Impression directe de la zone QR déjà affichée (pas de nouvelle fenêtre :
   // évite les blocages de pop-up qui empêchaient l'impression).
   var style=document.createElement("style");
