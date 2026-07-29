@@ -1160,7 +1160,7 @@ function save(){
     // Sa copie de D est volontairement réduite (pas de ddn/visite/téléphone/etc.) — l'écrire dans
     // le même cache que le Bureau écraserait ces données lors d'un prochain chargement sur le même appareil.
     clearTimeout(_saveTimer);
-    _saveTimer = setTimeout(function(){ syncMyPrivateData(); }, 2000);
+    _saveTimer = setTimeout(function(){ _saveTimer=null; syncMyPrivateData(); }, 2000);
     return;
   }
   // Always save to localStorage immediately
@@ -1168,6 +1168,7 @@ function save(){
   clearTimeout(_saveTimer);
   // Debounce GitHub save
   _saveTimer = setTimeout(function(){
+    _saveTimer=null;
     if(_pendingSaveCount>0){_saveAgainNeeded=true;return;} // a save is already in flight, queue another after it completes
     _doGithubSave();
   }, 2000);
@@ -1179,12 +1180,12 @@ function saveNow(){
   if(_currentProfile==="planningpublic")return;
   checkPlanningChangeForNotif();
   if(_currentProfile==="salarie"){
-    clearTimeout(_saveTimer);
+    clearTimeout(_saveTimer);_saveTimer=null;
     syncMyPrivateData();
     return;
   }
   localStorage.setItem(SK, JSON.stringify(D));
-  clearTimeout(_saveTimer);
+  clearTimeout(_saveTimer);_saveTimer=null;
   if(_pendingSaveCount>0){_saveAgainNeeded=true;return;}
   _doGithubSave();
 }
