@@ -2860,30 +2860,32 @@ function printGanttAnnuel(){
 }
 // Impression du gantt sur une seule page : format paysage + mise à l'échelle automatique
 // du tableau pour qu'il tienne toujours sur une seule feuille, quelle que soit sa taille.
-function printGanttOnePage(tableHtml,subtitle){
+function printOnePage(tableHtml,title,subtitle){
   var h="<!DOCTYPE html><html><head><meta charset='utf-8'>";
-  h+="<title>Planning annuel — Fonteneau Rénovation</title>";
+  h+="<title>"+title+" — Fonteneau Rénovation</title>";
   h+="<style>";
   h+="@page{size:landscape;margin:8mm}";
   h+="body{font-family:Arial,sans-serif;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}";
   h+="*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}";
   h+="h1{font-size:15px;margin:0 0 2px}h2{font-size:11px;color:#555;margin:0 0 8px;font-weight:normal}";
   h+="table{border-collapse:collapse}";
-  h+="#gantt-page{width:100%;box-sizing:border-box;padding:10px}";
-  h+="#gantt-scale-outer{overflow:hidden}";
-  h+="#gantt-scale-inner{transform-origin:top left;display:inline-block}";
+  h+="input,select{border:none!important;background:transparent!important;font:inherit;color:inherit;text-align:center;pointer-events:none;-webkit-appearance:none;appearance:none}";
+  h+="button{display:none!important}";
+  h+="#op-page{width:100%;box-sizing:border-box;padding:10px}";
+  h+="#op-scale-outer{overflow:hidden}";
+  h+="#op-scale-inner{transform-origin:top left;display:inline-block}";
   h+="</style></head><body>";
-  h+="<div id='gantt-page'>";
+  h+="<div id='op-page'>";
   h+="<img src='"+APP_LOGO_DATAURI+"' style='height:40px;margin-bottom:6px' alt='Logo'>";
-  h+="<h1>📅 Planning annuel</h1>";
+  h+="<h1>"+title+"</h1>";
   h+="<h2>"+(subtitle?subtitle+" — ":"")+"Imprimé le "+new Date().toLocaleDateString("fr-FR")+"</h2>";
-  h+="<div id='gantt-scale-outer'><div id='gantt-scale-inner'>"+tableHtml+"</div></div>";
+  h+="<div id='op-scale-outer'><div id='op-scale-inner'>"+tableHtml+"</div></div>";
   h+="</div>";
   h+="<script>";
   h+="window.onload=function(){";
-  h+="  var inner=document.getElementById('gantt-scale-inner');";
-  h+="  var outer=document.getElementById('gantt-scale-outer');";
-  h+="  var page=document.getElementById('gantt-page');";
+  h+="  var inner=document.getElementById('op-scale-inner');";
+  h+="  var outer=document.getElementById('op-scale-outer');";
+  h+="  var page=document.getElementById('op-page');";
   h+="  var availW=page.clientWidth-20;";
   h+="  var availH=window.innerHeight-page.querySelector('h1').getBoundingClientRect().top-90;";
   h+="  var natW=inner.scrollWidth, natH=inner.scrollHeight;";
@@ -2900,6 +2902,9 @@ function printGanttOnePage(tableHtml,subtitle){
   w.document.close();
   w.focus();
 }
+function printGanttOnePage(tableHtml,subtitle){
+  printOnePage(tableHtml,"📅 Planning annuel",subtitle);
+}
 function printBilanAnnuel(){
   var yEl=document.getElementById("bilan-annee");
   var sub=yEl?("Année "+yEl.value):"";
@@ -2908,7 +2913,9 @@ function printBilanAnnuel(){
 function printRttRecapAnnuel(){
   var yEl=document.getElementById("rttrecap-annee");
   var sub=yEl?("Année "+yEl.value):"";
-  printTabContent("rttrecap-wrap","🕐 Récapitulatif RTT",sub);
+  var wrap=document.getElementById("rttrecap-wrap");
+  if(!wrap){showToast("⚠️ Rien à imprimer.");return;}
+  printOnePage(wrap.innerHTML,"🕐 Récapitulatif RTT",sub);
 }
 function printVehicules(){
   var h="<!DOCTYPE html><html><head><meta charset='utf-8'>";
@@ -5320,6 +5327,51 @@ function RMONRTT(){
 var RTT_REPORT_CUTOFF_YEAR=2026; // Année exceptionnelle : report appliqué fin mai au lieu de début janvier
 var RTT_REPORT_CUTOFF_MONTH=5; // Mois jusqu'auquel rien n'est calculé (inclus)
 
+// Calcule le solde RTT au 31 décembre d'une année donnée pour un salarié (report inclus).
+function computeYearEndSolde(salId,annee){
+  var isCutoffYr=(annee===RTT_REPORT_CUTOFF_YEAR);
+  var startMo=isCutoffYr?(RTT_REPORT_CUTOFF_MONTH+1):1;
+  var solde=getRTTReportForYear(salId,annee);
+  if(!D.rttManual)D.rttManual={};
+  for(var mo=startMo;mo<=12;mo++){
+    var manualAcqKey=salId+"|"+annee+"|"+mo+"|acq";
+    var manualPoseKey=salId+"|"+annee+"|"+mo+"|pose";
+    var acquis=0,poses=0;
+    if(D.rttManual[manualAcqKey]!==undefined){
+      acquis=parseFloat(D.rttManual[manualAcqKey])||0;
+    } else {
+      getWeeksOfMonth(mo,annee).forEach(function(wk){
+        getDatesOfWeek(wk,annee).forEach(function(dt,di){
+          if(dt.getMonth()+1!==mo||dt.getFullYear()!==annee)return;
+          var a=ptGet(mo,annee,"rtt_acq",salId,wk,di);
+          acquis+=(a!==""?parseFloat(a)||0:(di<4&&!isFerie(dt)?0.5:0));
+        });
+      });
+    }
+    if(D.rttManual[manualPoseKey]!==undefined){
+      poses=parseFloat(D.rttManual[manualPoseKey])||0;
+    } else {
+      getWeeksOfMonth(mo,annee).forEach(function(wk){
+        getDatesOfWeek(wk,annee).forEach(function(dt,di){
+          if(dt.getMonth()+1!==mo||dt.getFullYear()!==annee)return;
+          poses+=parseFloat(ptGet(mo,annee,"rtt_pose",salId,wk,di))||0;
+        });
+      });
+    }
+    solde=solde+acquis-poses;
+  }
+  return solde;
+}
+// Renvoie le report applicable en début d'année : valeur saisie manuellement si elle existe,
+// sinon automatiquement le solde de fin d'année précédente (report en cascade d'année en année).
+function getRTTReportForYear(salId,annee){
+  if(!D.rttReport)D.rttReport={};
+  var key=salId+"|"+annee;
+  if(D.rttReport[key]!==undefined)return parseFloat(D.rttReport[key])||0;
+  if(annee<=RTT_REPORT_CUTOFF_YEAR)return 0; // avant la mise en place de l'outil : rien à calculer
+  return computeYearEndSolde(salId,annee-1);
+}
+
 function RRTTRECAP(){
   var wrap=document.getElementById("rttrecap-wrap");
   if(!wrap)return;
@@ -5360,13 +5412,16 @@ function RRTTRECAP(){
 
   sals.forEach(function(sal,ri){
     var rowBg=ri%2===0?"#fff":"#f8f7f4";
-    var reportVal=D.rttReport[sal.id+"|"+annee];
-    var reportDisplay=reportVal!==undefined?reportVal:"";
+    var explicitReport=D.rttReport[sal.id+"|"+annee];
+    var isAutoReport=(explicitReport===undefined&&annee>RTT_REPORT_CUTOFF_YEAR);
+    var reportVal=explicitReport!==undefined?explicitReport:(isAutoReport?getRTTReportForYear(sal.id,annee):undefined);
+    var reportDisplay=reportVal!==undefined?(isAutoReport?reportVal.toFixed(1):reportVal):"";
 
     html+="<tr>";
     html+="<td style='border:1px solid #e2e8f0;padding:5px 10px;font-weight:500;background:"+rowBg+";position:sticky;left:0'>"+(sal.nom?sal.nom+" ":"")+sal.prenom+"</td>";
-    html+="<td style='border:1px solid #e2e8f0;padding:2px;text-align:center;background:#f3f0ff'>";
-    html+="<input type='number' step='0.5' value='"+reportDisplay+"' placeholder='0' style='width:60px;height:24px;border:1px solid #c4b5fd;border-radius:4px;text-align:center;font-size:11px;outline:none' onchange='setRTTReport("+JSON.stringify(sal.id)+","+annee+",this.value)'>";
+    html+="<td style='border:1px solid #e2e8f0;padding:2px;text-align:center;background:"+(isAutoReport?"#f0f9ff":"#f3f0ff")+"' title='"+(isAutoReport?"Reporté automatiquement depuis le solde "+(annee-1):"Saisi manuellement")+"'>";
+    html+="<input type='number' step='0.5' value='"+reportDisplay+"' placeholder='0' style='width:60px;height:24px;border:1px solid "+(isAutoReport?"#7dd3fc":"#c4b5fd")+";border-radius:4px;text-align:center;font-size:11px;outline:none;color:"+(isAutoReport?"#0369a1":"#1a1916")+"' onchange='setRTTReport("+JSON.stringify(sal.id)+","+annee+",this.value)'>";
+    if(isAutoReport)html+="<div style='font-size:8px;color:#0891b2;margin-top:1px'>auto ("+(annee-1)+")</div>";
     html+="</td>";
 
     var solde=parseFloat(reportVal)||0;
@@ -5464,7 +5519,7 @@ function exportRTTRecapCSV(){
   for(var m=1;m<=12;m++){hdr.push(MOIS_NOMS[m]+" Acquis");hdr.push(MOIS_NOMS[m]+" Posés");hdr.push(MOIS_NOMS[m]+" Solde");}
   lines.push(hdr.join("\t"));
   sals.forEach(function(sal){
-    var reportVal=D.rttReport[sal.id+"|"+annee]||0;
+    var reportVal=getRTTReportForYear(sal.id,annee);
     var row=[(sal.nom?sal.nom+" ":"")+sal.prenom,reportVal];
     var solde=reportVal;
     for(var mo=1;mo<=12;mo++){
