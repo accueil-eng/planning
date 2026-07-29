@@ -5590,7 +5590,7 @@ function addChantierFromBilan(){
     var nom=document.getElementById("bam-nom").value.trim();
     if(!nom){alert("Le nom du chantier est requis.");return;}
     var ref=document.getElementById("bam-ref").value.trim();
-    D.chantiers.push({id:"ch_"+Date.now(),ref:ref,nom:nom,color:COLORS[D.chantiers.length%COLORS.length]});
+    D.chantiers.push({id:"ch_"+Date.now(),ref:ref,nom:nom,color:COLORS[D.chantiers.length%COLORS.length],manualBilan:true});
     saveNow();
     modal.remove();
     // S'assure qu'on est bien sur 2026 pour voir immédiatement les cases modifiables
@@ -5604,6 +5604,7 @@ function addChantierFromBilan(){
 function deleteChantierFromBilan(chId,annee){
   var ch=D.chantiers.find(function(c){return c.id===chId;});
   if(!ch)return;
+  if(!ch.manualBilan){showToast("⚠️ Seuls les chantiers insérés manuellement peuvent être supprimés ici.");return;}
   if(!confirm("Supprimer le chantier \""+(ch.ref?ch.ref+" - ":"")+ch.nom+"\" ?\n\nCette action est définitive."))return;
   D.chantiers=D.chantiers.filter(function(c){return c.id!==chId;});
   // Nettoyage des heures manuelles saisies dans le Bilan pour ce chantier
@@ -5795,7 +5796,8 @@ function RBILAN(){
   function renderRow(item,ri,colorDot){
     var rowBg=ri%2===0?"#fff":"#f8f7f4";
     var rowHtml="<tr style='cursor:pointer' onclick='toggleBilanDetail(\""+item._id+"\")'>";
-    var delBtn=(!item.isSpecial)?("<span onclick='event.stopPropagation();deleteChantierFromBilan(\""+item._id+"\","+annee+")' title='Supprimer ce chantier' style='float:right;color:#dc2626;font-weight:700;cursor:pointer;padding:0 4px'>×</span>"):"";
+    var chObj=(!item.isSpecial)?D.chantiers.find(function(c){return c.id===item._id;}):null;
+    var delBtn=(chObj&&chObj.manualBilan)?("<span onclick='event.stopPropagation();deleteChantierFromBilan(\""+item._id+"\","+annee+")' title='Supprimer ce chantier (inséré manuellement)' style='float:right;color:#dc2626;font-weight:700;cursor:pointer;padding:0 4px'>×</span>"):"";
     rowHtml+="<td style='border:1px solid #e2e8f0;padding:5px 10px;font-weight:500;background:"+rowBg+"'>"+delBtn+(colorDot?"<span style='display:inline-block;width:8px;height:8px;border-radius:50%;background:"+colorDot+";margin-right:6px'></span>":"")+item.nom+" <span style='font-size:9px;color:#94a3b8'>\u25BE</span></td>";
     for(var mm=1;mm<=12;mm++){
       var mh=item.byMonth[mm]||0;
