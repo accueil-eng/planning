@@ -2855,8 +2855,50 @@ function printGanttAnnuel(){
     if(deEl)deEl.value=curEnd;
     RGANTT();
     var sub=(pStart||pEnd)?("Du "+fmt(pStart)+" au "+fmt(pEnd)):"";
-    printTabContent("gantt-wrap","📅 Planning annuel",sub,printHtml);
+    printGanttOnePage(printHtml,sub);
   };
+}
+// Impression du gantt sur une seule page : format paysage + mise à l'échelle automatique
+// du tableau pour qu'il tienne toujours sur une seule feuille, quelle que soit sa taille.
+function printGanttOnePage(tableHtml,subtitle){
+  var h="<!DOCTYPE html><html><head><meta charset='utf-8'>";
+  h+="<title>Planning annuel — Fonteneau Rénovation</title>";
+  h+="<style>";
+  h+="@page{size:landscape;margin:8mm}";
+  h+="body{font-family:Arial,sans-serif;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}";
+  h+="*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}";
+  h+="h1{font-size:15px;margin:0 0 2px}h2{font-size:11px;color:#555;margin:0 0 8px;font-weight:normal}";
+  h+="table{border-collapse:collapse}";
+  h+="#gantt-page{width:100%;box-sizing:border-box;padding:10px}";
+  h+="#gantt-scale-outer{overflow:hidden}";
+  h+="#gantt-scale-inner{transform-origin:top left;display:inline-block}";
+  h+="</style></head><body>";
+  h+="<div id='gantt-page'>";
+  h+="<img src='"+APP_LOGO_DATAURI+"' style='height:40px;margin-bottom:6px' alt='Logo'>";
+  h+="<h1>📅 Planning annuel</h1>";
+  h+="<h2>"+(subtitle?subtitle+" — ":"")+"Imprimé le "+new Date().toLocaleDateString("fr-FR")+"</h2>";
+  h+="<div id='gantt-scale-outer'><div id='gantt-scale-inner'>"+tableHtml+"</div></div>";
+  h+="</div>";
+  h+="<script>";
+  h+="window.onload=function(){";
+  h+="  var inner=document.getElementById('gantt-scale-inner');";
+  h+="  var outer=document.getElementById('gantt-scale-outer');";
+  h+="  var page=document.getElementById('gantt-page');";
+  h+="  var availW=page.clientWidth-20;";
+  h+="  var availH=window.innerHeight-page.querySelector('h1').getBoundingClientRect().top-90;";
+  h+="  var natW=inner.scrollWidth, natH=inner.scrollHeight;";
+  h+="  var scale=Math.min(1, availW/natW, availH/natH);";
+  h+="  inner.style.transform='scale('+scale+')';";
+  h+="  outer.style.width=(natW*scale)+'px';";
+  h+="  outer.style.height=(natH*scale)+'px';";
+  h+="  setTimeout(function(){window.print();},250);";
+  h+="};";
+  h+="<\/script>";
+  h+="</body></html>";
+  var w=window.open("","_blank");
+  w.document.write(h);
+  w.document.close();
+  w.focus();
 }
 function printBilanAnnuel(){
   var yEl=document.getElementById("bilan-annee");
