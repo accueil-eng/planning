@@ -432,6 +432,7 @@ body.profile-salarie .tabs{display:none}
     <button class="btn" id="reset-conduite-btn" style="font-size:11px;background:#fef2f2;border-color:#fca5a5;color:#dc2626" onclick="resetConduiteMois()" title="Efface les anciennes valeurs de conduite pour recalculer">🔄 Réinit. conduite</button>
     <button class="btn btn-p" id="export-pointage-btn" onclick="exportPointageXLSX()" style="background:#16a34a;border-color:#16a34a">📥 Export Excel</button>
     <button class="btn btn-o" id="print-pointage-btn" onclick="printPointageBureau()">🖨️ Imprimer</button>
+    <button class="btn btn-o" style="background:#fce7f3;border-color:#f9a8d4;color:#9d174d" onclick="printAbsencesMois()">🖨️ Imprimer les absences du mois</button>
     <button class="btn btn-o" id="lock-pointage-btn" onclick="togglePointageLock()" style="display:none">🔒 Verrouiller</button>
     <select id="archive-select" style="height:34px;border:1px solid var(--brd2);border-radius:var(--rs);padding:0 10px;font-size:12px;background:var(--bg);color:var(--txt);outline:none" onchange="handleArchiveSelect(this)">
       <option value="">🗄️ Archiver...</option>
@@ -647,7 +648,7 @@ if(!D.grille)D.grille={
   trajet:{Z1A:0,Z1B:0,Z2:0,Z3:0,Z4:0,Z5:0,Z6:0,Z7:0,Z8:0,Z9:0,Z10:0},
   transport:{Z1A:0,Z1B:0,Z2:0,Z3:0,Z4:0,Z5:0,Z6:0,Z7:0,Z8:0,Z9:0,Z10:0}
 };
-["cells","rowChantiers","livraisons","vehAssign","vehIndispo","rttReport","ptReview","planningNotifSent","ptWeekValidations","rttManual","chHoursValidated","bureauWeekValidations"].forEach(function(k){if(!D[k])D[k]={};});
+["cells","rowChantiers","livraisons","vehAssign","vehIndispo","rttReport","ptReview","planningNotifSent","ptWeekValidations","rttManual","chHoursValidated","bureauWeekValidations","ptObservations"].forEach(function(k){if(!D[k])D[k]={};});
 
 var DEFAULT_PROCEDURES=[
   {id:"proc_canicule",titre:"🌡️ Canicule / Fortes chaleurs",couleur:"#dc2626",etapes:[
@@ -871,7 +872,7 @@ function loadPublicPlanning(cb){
     if(!pub){ if(cb)cb(); return; }
     D = pub;
     ["chantiers","salaries","absences","vehicules","formations","rdvs"].forEach(function(k){if(!D[k])D[k]=[];});
-    ["cells","rowChantiers","livraisons","vehAssign","vehIndispo","rttReport","ptReview","planningNotifSent","ptWeekValidations","rttManual","chHoursValidated","bureauWeekValidations"].forEach(function(k){if(!D[k])D[k]={};});
+    ["cells","rowChantiers","livraisons","vehAssign","vehIndispo","rttReport","ptReview","planningNotifSent","ptWeekValidations","rttManual","chHoursValidated","bureauWeekValidations","ptObservations"].forEach(function(k){if(!D[k])D[k]={};});
     if(!D.absDemandes)D.absDemandes=[];
     if(!D.pointages)D.pointages={};
     if(!D.grille)D.grille={trajet:{},transport:{}};
@@ -922,7 +923,7 @@ function loadFromCloud(cb){
         }
         D = remote;
         ["chantiers","salaries","absences","vehicules","formations","rdvs"].forEach(function(k){if(!D[k])D[k]=[];});
-        ["cells","rowChantiers","livraisons","vehAssign","vehIndispo","rttReport","ptReview","planningNotifSent","ptWeekValidations","rttManual","chHoursValidated","bureauWeekValidations"].forEach(function(k){if(!D[k])D[k]={};});
+        ["cells","rowChantiers","livraisons","vehAssign","vehIndispo","rttReport","ptReview","planningNotifSent","ptWeekValidations","rttManual","chHoursValidated","bureauWeekValidations","ptObservations"].forEach(function(k){if(!D[k])D[k]={};});
 if(!D.absDemandes)D.absDemandes=[];
         if(!D.pointages)D.pointages={};
         if(!D.grille)D.grille={trajet:{},transport:{}};
@@ -1242,7 +1243,7 @@ function importJSON(ev){
       if(!confirm("Remplacer toutes les données par cette sauvegarde ?"))return;
       D=data;
       ["chantiers","salaries","absences","vehicules"].forEach(function(k){if(!D[k])D[k]=[];});
-      ["cells","rowChantiers","livraisons","vehAssign","vehIndispo","rttReport","ptReview","planningNotifSent","ptWeekValidations","rttManual","chHoursValidated","bureauWeekValidations"].forEach(function(k){if(!D[k])D[k]={};});
+      ["cells","rowChantiers","livraisons","vehAssign","vehIndispo","rttReport","ptReview","planningNotifSent","ptWeekValidations","rttManual","chHoursValidated","bureauWeekValidations","ptObservations"].forEach(function(k){if(!D[k])D[k]={};});
 if(!D.absDemandes)D.absDemandes=[];
       save();RP();RC();RS();RA();RV();RF();RRDV();RANALYSE();RGANTT();RPOINTAGE();RINDEM();
     }catch(err){alert("Fichier invalide: "+err.message);}
@@ -2714,6 +2715,52 @@ function printTelephones(){
       h+="<tr><td><b>"+(sal.nom?sal.nom+" ":"")+sal.prenom+"</b></td><td>"+pro+"</td><td>"+perso+"</td></tr>";
     });
     h+="</tbody></table>";
+    h+="<p style='font-size:10px;color:#888;margin-top:20px'>Fonteneau Rénovation — Document généré automatiquement</p>";
+    h+="</body></html>";
+    openPrintWindow(h);
+  });
+}
+function printAbsencesMois(){
+  var moisEl=document.getElementById("pt-mois"),anEl=document.getElementById("pt-annee");
+  var mois=moisEl?parseInt(moisEl.value):(new Date().getMonth()+1);
+  var annee=anEl?parseInt(anEl.value):new Date().getFullYear();
+  var MOIS_NOMS=["","Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+  var monthStart=new Date(annee,mois-1,1);
+  var monthEnd=new Date(annee,mois,0);
+  showSalarieSelectModal("🌴 Sélectionner les salariés — Absences de "+MOIS_NOMS[mois]+" "+annee,function(selected){
+    var fmt=function(d){return d?new Date(d).toLocaleDateString("fr-FR"):"—";};
+    var h="<!DOCTYPE html><html><head><meta charset='utf-8'>";
+    h+="<title>Absences "+MOIS_NOMS[mois]+" "+annee+" — Fonteneau Rénovation</title>";
+    h+="<style>body{font-family:Arial,sans-serif;font-size:13px;margin:20px}";
+    h+="h1{font-size:17px;margin:0 0 4px}h2{font-size:12px;color:#555;margin:0 0 18px;font-weight:normal}";
+    h+="h3{font-size:13px;margin:18px 0 6px;color:#1a1916}";
+    h+="table{border-collapse:collapse;width:100%;margin-bottom:10px}";
+    h+="th,td{border:1px solid #ccc;padding:6px 10px;text-align:left}";
+    h+="th{background:#1a1916;color:#fff;font-size:11px}";
+    h+="tr:nth-child(even){background:#f8f8f8}";
+    h+=".none{color:#94a3b8;font-style:italic;font-size:12px;margin-bottom:14px}";
+    h+="@media print{body{margin:10px}h3{page-break-after:avoid}}</style></head><body>";
+    h+="<img src='"+APP_LOGO_DATAURI+"' style='height:60px;margin-bottom:10px' alt='Logo'>";
+    h+="<h1>🌴 Absences — "+MOIS_NOMS[mois]+" "+annee+"</h1>";
+    h+="<h2>Fonteneau Rénovation — Imprimé le "+new Date().toLocaleDateString("fr-FR")+"</h2>";
+    selected.forEach(function(sal){
+      var abs=(D.absences||[]).filter(function(a){
+        if(a.salId!==sal.id)return false;
+        var d1=pd(a.debut),d2=pd(a.fin);
+        return d1<=monthEnd&&d2>=monthStart;
+      }).sort(function(a,b){return a.debut.localeCompare(b.debut);});
+      h+="<h3>"+(sal.nom?sal.nom+" ":"")+sal.prenom+"</h3>";
+      if(!abs.length){
+        h+="<div class='none'>Aucune absence ce mois-ci.</div>";
+        return;
+      }
+      h+="<table><thead><tr><th>Type</th><th>Du</th><th>Au</th><th>Horaires</th></tr></thead><tbody>";
+      abs.forEach(function(a){
+        var horaires=(a.heureDebut&&a.heureFin)?(a.heureDebut+" – "+a.heureFin):"Journée complète";
+        h+="<tr><td>"+(ABLBLS[a.type]||a.type)+"</td><td>"+fmt(a.debut)+"</td><td>"+fmt(a.fin)+"</td><td>"+horaires+"</td></tr>";
+      });
+      h+="</tbody></table>";
+    });
     h+="<p style='font-size:10px;color:#888;margin-top:20px'>Fonteneau Rénovation — Document généré automatiquement</p>";
     h+="</body></html>";
     openPrintWindow(h);
@@ -6256,11 +6303,28 @@ function RPOINTAGE(){
       var bvBlock=renderBureauWeekValidateBlock(sal.id,mois,annee);
       html+=bvBlock.html;
       _bureauValidateBindings.push(bvBlock);
+      var obsKey=mois+"|"+annee+"|"+sal.id;
+      var obsVal=(D.ptObservations&&D.ptObservations[obsKey])||"";
+      html+="<div style='padding:10px 14px;background:#fffbeb;border-top:1px solid #fde68a'>";
+      html+="<label style='display:block;font-size:11px;font-weight:700;color:#92400e;margin-bottom:4px'>📝 Observation</label>";
+      html+="<textarea class='pt-obs-input' data-obs-key='"+obsKey+"' placeholder='Note pour ce salarié ce mois-ci...' style='width:100%;min-height:44px;border:1px solid #fde68a;border-radius:6px;padding:6px 8px;font-size:12px;resize:vertical;box-sizing:border-box;font-family:inherit'>"+obsVal.replace(/</g,"&lt;")+"</textarea>";
+      html+="</div>";
     }
     html+="</div>";
   });
 
   wrap.innerHTML=html;
+
+  // Observations Bureau : sauvegarde à la perte de focus
+  wrap.querySelectorAll(".pt-obs-input").forEach(function(ta){
+    ta.addEventListener("blur",function(){
+      if(!D.ptObservations)D.ptObservations={};
+      var key=ta.dataset.obsKey;
+      if(ta.value.trim()){D.ptObservations[key]=ta.value;}
+      else{delete D.ptObservations[key];}
+      save();
+    });
+  });
 
   // Délégation d'événements pour tous les inputs du pointage (mobile-compatible)
   // Un seul listener sur le conteneur évite les re-rendus multiples
@@ -6860,6 +6924,14 @@ function printPointageSalarie(salId,mois,annee,downloadPdf){
   });
 
   h+="</tbody></table>";
+  var obsKeyP=mois+"|"+annee+"|"+salId;
+  var obsValP=D.ptObservations&&D.ptObservations[obsKeyP];
+  if(obsValP){
+    h+="<div style='margin-top:16px;padding:10px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px'>";
+    h+="<div style='font-size:11px;font-weight:700;color:#92400e;margin-bottom:4px'>📝 OBSERVATION</div>";
+    h+="<div style='font-size:12px;color:#78350f;white-space:pre-wrap'>"+obsValP.replace(/</g,"&lt;")+"</div>";
+    h+="</div>";
+  }
   h+="<p style='font-size:10px;color:#888;margin-top:20px'>Fonteneau Rénovation — Document généré automatiquement depuis l'espace personnel salarié</p>";
   h+="</body></html>";
 
