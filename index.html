@@ -279,6 +279,7 @@ body.profile-salarie .tabs{display:none}
     <input id="sn" placeholder="Nom" maxlength="30">
     <input id="sto" placeholder="Poste" maxlength="40">
     <input id="swa" placeholder="📱 N° WhatsApp (ex: 33612345678)" maxlength="20" style="max-width:220px">
+    <input id="stelperso" placeholder="☎️ Tél. personnel" maxlength="20" style="max-width:160px">
     <input type="date" id="sddn" title="Date de naissance" style="max-width:140px">
     <input type="date" id="svm" title="Dernière visite médicale" style="max-width:160px">
     <input type="number" id="staux" placeholder="Taux horaire €/h" min="0" step="0.01" style="max-width:140px">
@@ -2213,7 +2214,7 @@ function RC(){
 
 // ── SALARIÉS ──
 var scS=COLORS[1];
-function addSal(){var prenom=document.getElementById("sp").value.trim();if(!prenom)return;D.salaries.push({id:"sal_"+Date.now(),prenom:prenom,nom:document.getElementById("sn").value.trim(),poste:document.getElementById("sto").value.trim(),whatsapp:document.getElementById("swa").value.trim().replace(/[^0-9]/g,""),ddn:document.getElementById("sddn").value,visite:document.getElementById("svm").value,type:document.getElementById("stype").value,contrat:document.getElementById("scontrat").value,contratDebut:document.getElementById("scdeb").value,contratFin:document.getElementById("scfin").value,taux:document.getElementById("staux").value?parseFloat(document.getElementById("staux").value):null,color:scS});saveNow();document.getElementById("sp").value="";document.getElementById("sn").value="";document.getElementById("sto").value="";document.getElementById("swa").value="";document.getElementById("sddn").value="";document.getElementById("svm").value="";document.getElementById("stype").value="salarie";document.getElementById("scontrat").value="cdi";document.getElementById("scdeb").value="";document.getElementById("scfin").value="";document.getElementById("staux").value="";scS=COLORS[D.salaries.length%COLORS.length];buildCP("salcp",function(c){scS=c;},scS);RS();}
+function addSal(){var prenom=document.getElementById("sp").value.trim();if(!prenom)return;D.salaries.push({id:"sal_"+Date.now(),prenom:prenom,nom:document.getElementById("sn").value.trim(),poste:document.getElementById("sto").value.trim(),whatsapp:document.getElementById("swa").value.trim().replace(/[^0-9]/g,""),telPerso:document.getElementById("stelperso").value.trim().replace(/[^0-9]/g,""),ddn:document.getElementById("sddn").value,visite:document.getElementById("svm").value,type:document.getElementById("stype").value,contrat:document.getElementById("scontrat").value,contratDebut:document.getElementById("scdeb").value,contratFin:document.getElementById("scfin").value,taux:document.getElementById("staux").value?parseFloat(document.getElementById("staux").value):null,color:scS});saveNow();document.getElementById("sp").value="";document.getElementById("sn").value="";document.getElementById("sto").value="";document.getElementById("swa").value="";document.getElementById("stelperso").value="";document.getElementById("sddn").value="";document.getElementById("svm").value="";document.getElementById("stype").value="salarie";document.getElementById("scontrat").value="cdi";document.getElementById("scdeb").value="";document.getElementById("scfin").value="";document.getElementById("staux").value="";scS=COLORS[D.salaries.length%COLORS.length];buildCP("salcp",function(c){scS=c;},scS);RS();}
 function editSal(id){
   var sal=D.salaries.find(function(s){return s.id===id;});
   if(!sal)return;
@@ -2237,6 +2238,7 @@ function editSal(id){
   var fTel=mkRow("📱 WhatsApp",Object.assign(document.createElement("input"),{value:sal.whatsapp||"",maxLength:20,placeholder:"33612345678",style:"flex:1;height:32px;border:1px solid #c5bfb5;border-radius:6px;padding:0 8px;font-size:12px;outline:none"}));
   var fTelType=mkRow("Type de téléphone",Object.assign(document.createElement("select"),{style:"flex:1;height:32px;border:1px solid #c5bfb5;border-radius:6px;padding:0 8px;font-size:12px;outline:none"}));
   [["pro","Professionnel"],["perso","Personnel (accord donné)"]].forEach(function(o){var opt=document.createElement("option");opt.value=o[0];opt.textContent=o[1];if((sal.telType||"pro")===o[0])opt.selected=true;fTelType.appendChild(opt);});
+  var fTelPerso=mkRow("☎️ Téléphone personnel",Object.assign(document.createElement("input"),{value:sal.telPerso||"",maxLength:20,placeholder:"0612345678",style:"flex:1;height:32px;border:1px solid #c5bfb5;border-radius:6px;padding:0 8px;font-size:12px;outline:none"}));
   var fDdn=mkRow("🎂 Date naissance",Object.assign(document.createElement("input"),{type:"date",value:sal.ddn||"",style:"flex:1;height:32px;border:1px solid #c5bfb5;border-radius:6px;padding:0 8px;font-size:12px;outline:none"}));
   var fVm=mkRow("🏥 Dernière visite",Object.assign(document.createElement("input"),{type:"date",value:sal.visite||"",style:"flex:1;height:32px;border:1px solid #c5bfb5;border-radius:6px;padding:0 8px;font-size:12px;outline:none"}));
   var fVmPrev=mkRow("📅 RDV visite prévu",Object.assign(document.createElement("input"),{type:"date",value:sal.visitePrev||"",style:"flex:1;height:32px;border:1px solid #0891b2;border-radius:6px;padding:0 8px;font-size:12px;outline:none"}));
@@ -2256,6 +2258,7 @@ function editSal(id){
     sal.prenom=fPrenom.value.trim();sal.nom=fNom.value.trim();sal.poste=fPoste.value.trim();
     sal.whatsapp=fTel.value.trim().replace(/[^0-9]/g,"");
     sal.telType=fTelType.value;
+    sal.telPerso=fTelPerso.value.trim().replace(/[^0-9]/g,"");
     sal.ddn=fDdn.value;sal.visite=fVm.value;sal.visitePrev=fVmPrev.value;sal.type=fType.value;sal.isBureau=fBureau.checked;
     sal.contrat=fContrat.value;sal.contratDebut=fContratDebut.value;sal.contratFin=fContratFin.value;
     sal.taux=fTaux.value?parseFloat(fTaux.value):null;
@@ -2320,11 +2323,14 @@ function RS(){
     tdTaux.textContent=sal.taux!=null?sal.taux.toFixed(2)+" €/h":"—";
     // Téléphone
     var tdTel=tr.insertCell();tdTel.style.cssText="padding:8px 10px;border:1px solid var(--brd);color:var(--muted)";
+    var telParts=[];
     if(sal.whatsapp){
-      tdTel.innerHTML="+"+sal.whatsapp+" <span style='font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin-left:4px;"+(sal.telType==="perso"?"background:#fce7f3;color:#db2777":"background:#e0f2fe;color:#0891b2")+"'>"+(sal.telType==="perso"?"PERSO":"PRO")+"</span>";
-    } else {
-      tdTel.textContent="—";
+      telParts.push("<div>+"+sal.whatsapp+" <span style='font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin-left:4px;"+(sal.telType==="perso"?"background:#fce7f3;color:#db2777":"background:#e0f2fe;color:#0891b2")+"'>"+(sal.telType==="perso"?"PERSO":"PRO")+"</span></div>");
     }
+    if(sal.telPerso){
+      telParts.push("<div style='margin-top:2px'>"+sal.telPerso+" <span style='font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin-left:4px;background:#ede9fe;color:#6d28d9'>PERSO</span></div>");
+    }
+    tdTel.innerHTML=telParts.length?telParts.join(""):"—";
     // Anniversaire
     var tdBday=tr.insertCell();tdBday.style.cssText="padding:8px 10px;border:1px solid var(--brd)";
     if(sal.ddn){
