@@ -5567,9 +5567,8 @@ function exportRTTRecapCSV(){
 function setBilanManual(id,mo,annee,value){
   if(!D.bilanManual)D.bilanManual={};
   var key=id+"|"+mo+"|"+annee;
-  var v=parseFloat(value);
-  if(!v){delete D.bilanManual[key];}
-  else{D.bilanManual[key]=v;}
+  if(value===""){delete D.bilanManual[key];}
+  else{D.bilanManual[key]=parseFloat(value)||0;}
   save();
   RBILAN();
 }
@@ -5686,7 +5685,8 @@ function RBILAN(){
     });
   });
 
-  // ── Fusion des heures saisies manuellement (mois sans pointage, ex: avant l'utilisation de l'outil) ──
+  // ── Fusion des heures saisies manuellement : une valeur saisie REMPLACE la valeur calculée
+  // de ce mois (utile ex. pour écraser un mois de test comme juin 2026) ──
   if(!D.bilanManual)D.bilanManual={};
   function snapshotCalc(obj){obj.byMonthCalc=Object.assign({},obj.byMonth);}
   Object.keys(bilan).forEach(function(k){snapshotCalc(bilan[k]);});
@@ -5695,20 +5695,22 @@ function RBILAN(){
     if(ch.ref==="9200"||ch.ref==="9300")return;
     for(var moM=1;moM<=12;moM++){
       var mkey=ch.id+"|"+moM+"|"+annee;
-      var mv=parseFloat(D.bilanManual[mkey]);
-      if(!mv)continue;
+      if(!(mkey in D.bilanManual))continue;
+      var mv=parseFloat(D.bilanManual[mkey])||0;
       if(!bilan[ch.id]){bilan[ch.id]={nom:(ch.ref?ch.ref+" - ":"")+ch.nom,color:ch.color,totalH:0,bySalarie:{},byMonth:{},byMonthCalc:{}};}
-      bilan[ch.id].byMonth[moM]=(bilan[ch.id].byMonth[moM]||0)+mv;
-      bilan[ch.id].totalH+=mv;
+      var prevVal=bilan[ch.id].byMonth[moM]||0;
+      bilan[ch.id].byMonth[moM]=mv;
+      bilan[ch.id].totalH+=(mv-prevVal);
     }
   });
   ["bureau","depot","formation","intemp"].forEach(function(sk){
     for(var moS=1;moS<=12;moS++){
       var mkeyS="special_"+sk+"|"+moS+"|"+annee;
-      var mvS=parseFloat(D.bilanManual[mkeyS]);
-      if(!mvS)continue;
-      special[sk].byMonth[moS]=(special[sk].byMonth[moS]||0)+mvS;
-      special[sk].totalH+=mvS;
+      if(!(mkeyS in D.bilanManual))continue;
+      var mvS=parseFloat(D.bilanManual[mkeyS])||0;
+      var prevValS=special[sk].byMonth[moS]||0;
+      special[sk].byMonth[moS]=mvS;
+      special[sk].totalH+=(mvS-prevValS);
     }
   });
 
@@ -5735,17 +5737,14 @@ function RBILAN(){
     for(var mm=1;mm<=12;mm++){
       var mh=item.byMonth[mm]||0;
       var calcH=(item.byMonthCalc&&item.byMonthCalc[mm])||0;
-      if(calcH===0){
-        var mkeyC=item._id+"|"+mm+"|"+annee;
-        var manualVal=(D.bilanManual&&D.bilanManual[mkeyC])?D.bilanManual[mkeyC]:"";
-        rowHtml+="<td style='border:1px solid #e2e8f0;padding:1px;text-align:center;background:"+(manualVal?"#fffbeb":rowBg)+"'>"+
-          "<input type='number' step='0.5' value='"+manualVal+"' placeholder='—' title='Saisie manuelle (aucun pointage ce mois-ci)' "+
-          "style='width:40px;height:22px;border:1px solid "+(manualVal?"#fde68a":"#e2e8f0")+";border-radius:3px;text-align:center;font-size:10px;outline:none;background:transparent;color:#92400e' "+
-          "onclick='event.stopPropagation()' onchange='setBilanManual(\""+item._id+"\","+mm+","+annee+",this.value)'>"+
-          "</td>";
-      } else {
-        rowHtml+="<td style='border:1px solid #e2e8f0;padding:5px 6px;text-align:center;background:"+rowBg+";color:#1a1916'>"+mh.toFixed(1)+"</td>";
-      }
+      var mkeyC=item._id+"|"+mm+"|"+annee;
+      var hasOverride=D.bilanManual&&(mkeyC in D.bilanManual);
+      var displayVal=hasOverride?mh:calcH;
+      rowHtml+="<td style='border:1px solid #e2e8f0;padding:1px;text-align:center;background:"+(hasOverride?"#fffbeb":rowBg)+"'>"+
+        "<input type='number' step='0.5' value='"+(displayVal?displayVal:"")+"' placeholder='—' title='"+(hasOverride?"Valeur saisie manuellement (écrase le calcul automatique)":"Cliquer pour saisir/corriger manuellement")+"' "+
+        "style='width:40px;height:22px;border:1px solid "+(hasOverride?"#fde68a":"transparent")+";border-radius:3px;text-align:center;font-size:10px;outline:none;background:transparent;color:"+(hasOverride?"#92400e":"#1a1916")+"' "+
+        "onclick='event.stopPropagation()' onchange='setBilanManual(\""+item._id+"\","+mm+","+annee+",this.value)'>"+
+        "</td>";
     }
     rowHtml+="<td style='border:1px solid #e2e8f0;padding:5px 10px;text-align:center;font-weight:700;background:#ede9fe;color:#7c3aed'>"+item.totalH.toFixed(1)+"h</td>";
     rowHtml+="</tr>";
