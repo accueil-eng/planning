@@ -2799,12 +2799,13 @@ function printVisitesMedicales(){
 }
 // Imprime le contenu déjà affiché d'un conteneur (tableau généré), avec logo + titre.
 // Neutralise les champs de saisie (affichés comme du texte simple à l'impression).
-function printTabContent(wrapId,title,subtitle){
+function printTabContent(wrapId,title,subtitle,htmlOverride){
   var wrap=document.getElementById(wrapId);
-  if(!wrap){showToast("⚠️ Rien à imprimer.");return;}
+  if(!wrap&&!htmlOverride){showToast("⚠️ Rien à imprimer.");return;}
   var h="<!DOCTYPE html><html><head><meta charset='utf-8'>";
   h+="<title>"+title+" — Fonteneau Rénovation</title>";
-  h+="<style>body{font-family:Arial,sans-serif;font-size:11px;margin:20px}";
+  h+="<style>body{font-family:Arial,sans-serif;font-size:11px;margin:20px;-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}";
+  h+="*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}";
   h+="h1{font-size:16px;margin:0 0 4px}h2{font-size:12px;color:#555;margin:0 0 16px;font-weight:normal}";
   h+="table{border-collapse:collapse}";
   h+="input,select{border:none!important;background:transparent!important;font:inherit;color:inherit;text-align:center;pointer-events:none;-webkit-appearance:none;appearance:none}";
@@ -2813,16 +2814,49 @@ function printTabContent(wrapId,title,subtitle){
   h+="<img src='"+APP_LOGO_DATAURI+"' style='height:55px;margin-bottom:10px' alt='Logo'>";
   h+="<h1>"+title+"</h1>";
   h+="<h2>"+(subtitle?subtitle+" — ":"")+"Imprimé le "+new Date().toLocaleDateString("fr-FR")+"</h2>";
-  h+=wrap.innerHTML;
+  h+=(htmlOverride!==undefined?htmlOverride:wrap.innerHTML);
   h+="<p style='font-size:9px;color:#888;margin-top:20px'>Fonteneau Rénovation — Document généré automatiquement</p>";
   h+="</body></html>";
   openPrintWindow(h);
 }
 function printGanttAnnuel(){
-  var ds=document.getElementById("gantt-date-start"),de=document.getElementById("gantt-date-end");
+  var dsEl=document.getElementById("gantt-date-start"),deEl=document.getElementById("gantt-date-end");
   var fmt=function(v){return v?new Date(v).toLocaleDateString("fr-FR"):"";};
-  var sub=ds&&de?("Du "+fmt(ds.value)+" au "+fmt(de.value)):"";
-  printTabContent("gantt-wrap","📅 Planning annuel",sub);
+  var curStart=dsEl?dsEl.value:"",curEnd=deEl?deEl.value:"";
+
+  var existing=document.getElementById("gantt-print-period-modal");if(existing)existing.remove();
+  var modal=document.createElement("div");modal.id="gantt-print-period-modal";
+  modal.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center";
+  var box=document.createElement("div");
+  box.style.cssText="background:#fff;border-radius:14px;padding:24px 26px;max-width:340px;width:92%;box-shadow:0 16px 48px rgba(0,0,0,.2);font-family:DM Sans,sans-serif";
+  box.innerHTML="<div style='font-family:Syne,sans-serif;font-weight:800;font-size:15px;margin-bottom:14px;color:#1a1916'>🖨️ Période à imprimer</div>"+
+    "<label style='display:block;font-size:12px;font-weight:500;color:#475569;margin-bottom:4px'>Du</label>"+
+    "<input type='date' id='gp-start' value='"+curStart+"' style='width:100%;height:36px;border:1px solid #c5bfb5;border-radius:8px;padding:0 10px;font-size:13px;margin-bottom:10px;box-sizing:border-box'>"+
+    "<label style='display:block;font-size:12px;font-weight:500;color:#475569;margin-bottom:4px'>Au</label>"+
+    "<input type='date' id='gp-end' value='"+curEnd+"' style='width:100%;height:36px;border:1px solid #c5bfb5;border-radius:8px;padding:0 10px;font-size:13px;margin-bottom:16px;box-sizing:border-box'>"+
+    "<div style='display:flex;gap:8px'>"+
+    "<button id='gp-ok' style='flex:1;height:38px;background:#1a1916;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer'>🖨️ Imprimer</button>"+
+    "<button id='gp-cancel' style='height:38px;padding:0 16px;background:none;border:1px solid #c5bfb5;border-radius:8px;font-size:13px;cursor:pointer'>Annuler</button>"+
+    "</div>";
+  modal.appendChild(box);document.body.appendChild(modal);
+  modal.onclick=function(e){if(e.target===modal)modal.remove();};
+  document.getElementById("gp-cancel").onclick=function(){modal.remove();};
+  document.getElementById("gp-ok").onclick=function(){
+    var pStart=document.getElementById("gp-start").value;
+    var pEnd=document.getElementById("gp-end").value;
+    modal.remove();
+    // Rendu temporaire du gantt sur la période choisie pour l'impression, sans perturber l'affichage à l'écran
+    if(dsEl)dsEl.value=pStart;
+    if(deEl)deEl.value=pEnd;
+    RGANTT();
+    var printHtml=document.getElementById("gantt-wrap").innerHTML;
+    // Restaure l'affichage à l'écran tel qu'il était
+    if(dsEl)dsEl.value=curStart;
+    if(deEl)deEl.value=curEnd;
+    RGANTT();
+    var sub=(pStart||pEnd)?("Du "+fmt(pStart)+" au "+fmt(pEnd)):"";
+    printTabContent("gantt-wrap","📅 Planning annuel",sub,printHtml);
+  };
 }
 function printBilanAnnuel(){
   var yEl=document.getElementById("bilan-annee");
