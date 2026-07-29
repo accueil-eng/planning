@@ -2658,7 +2658,7 @@ function showSalarieSelectModal(title,onConfirm){
   allRow.appendChild(allCb);allRow.appendChild(document.createTextNode("Tout sélectionner / désélectionner"));
   box.appendChild(allRow);
   var listWrap=document.createElement("div");listWrap.style.cssText="overflow-y:auto;flex:1;margin-bottom:14px";
-  var sals=D.salaries.slice().sort(function(a,b){return (a.prenom||"").localeCompare(b.prenom||"");});
+  var sals=D.salaries.slice().sort(function(a,b){return (a.nom||a.prenom||"").localeCompare(b.nom||b.prenom||"");});
   var checkboxes=[];
   sals.forEach(function(sal){
     var row=document.createElement("label");row.style.cssText="display:flex;align-items:center;gap:8px;padding:5px 4px;font-size:13px;cursor:pointer";
@@ -2685,6 +2685,7 @@ function showSalarieSelectModal(title,onConfirm){
   modal.onclick=function(e){if(e.target===modal)modal.remove();};
 }
 function printTelephones(){
+  var fmtTel=function(n){if(!n)return"";return n.replace(/\D/g,"").replace(/(\d{2})(?=\d)/g,"$1 ").trim();};
   showSalarieSelectModal("📱 Sélectionner les salariés à imprimer",function(selected){
     var h="<!DOCTYPE html><html><head><meta charset='utf-8'>";
     h+="<title>Téléphones salariés — Fonteneau Rénovation</title>";
@@ -2700,9 +2701,9 @@ function printTelephones(){
     h+="<h2>Imprimé le "+new Date().toLocaleDateString("fr-FR")+"</h2>";
     h+="<table><thead><tr><th>Nom</th><th>Téléphone professionnel</th><th>Téléphone personnel</th></tr></thead><tbody>";
     selected.forEach(function(sal){
-      var pro=sal.whatsapp?("+"+sal.whatsapp+(sal.telType==="perso"?" (perso)":"")):"—";
-      var perso=sal.telPerso||"—";
-      h+="<tr><td><b>"+sal.prenom+(sal.nom?" "+sal.nom:"")+"</b></td><td>"+pro+"</td><td>"+perso+"</td></tr>";
+      var pro=sal.whatsapp?(fmtTel(sal.whatsapp)+(sal.telType==="perso"?" (perso)":"")):"—";
+      var perso=sal.telPerso?fmtTel(sal.telPerso):"—";
+      h+="<tr><td><b>"+(sal.nom?sal.nom+" ":"")+sal.prenom+"</b></td><td>"+pro+"</td><td>"+perso+"</td></tr>";
     });
     h+="</tbody></table>";
     h+="<p style='font-size:10px;color:#888;margin-top:20px'>Fonteneau Rénovation — Document généré automatiquement</p>";
@@ -2729,7 +2730,7 @@ function printVisitesMedicales(){
     h+="<table><thead><tr><th>Nom</th><th>Dernière visite</th><th>Prochaine visite</th></tr></thead><tbody>";
     selected.forEach(function(sal){
       var isLate=sal.visitePrev&&new Date(sal.visitePrev)<new Date();
-      h+="<tr><td><b>"+sal.prenom+(sal.nom?" "+sal.nom:"")+"</b></td><td>"+fmt(sal.visite)+"</td><td"+(isLate?" class='late'":"")+">"+fmt(sal.visitePrev)+(isLate?" ⚠️":"")+"</td></tr>";
+      h+="<tr><td><b>"+(sal.nom?sal.nom+" ":"")+sal.prenom+"</b></td><td>"+fmt(sal.visite)+"</td><td"+(isLate?" class='late'":"")+">"+fmt(sal.visitePrev)+(isLate?" ⚠️":"")+"</td></tr>";
     });
     h+="</tbody></table>";
     h+="<p style='font-size:10px;color:#888;margin-top:20px'>Fonteneau Rénovation — Document généré automatiquement</p>";
