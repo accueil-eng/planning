@@ -565,7 +565,10 @@ body.profile-salarie .tabs{display:none}
 <div class="pg" id="pg-messages">
   <h2 class="stitle">💬 Messages</h2>
   <div id="messages-bureau-compose" style="display:none;margin-bottom:16px;background:#fff;border:1px solid var(--brd);border-radius:12px;padding:16px">
-    <div style="font-weight:700;font-size:13px;margin-bottom:10px">✉️ Nouveau message</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-weight:700;font-size:13px">✉️ Nouveau message</div>
+      <div style="font-size:11px;color:var(--muted)">Vous écrivez en tant que <b id="bureau-identity-label"></b> · <span style="text-decoration:underline;cursor:pointer;color:#0891b2" onclick="showBureauIdentityModal()">changer</span></div>
+    </div>
     <select id="msg-to" style="width:100%;height:36px;border:1px solid var(--brd2);border-radius:8px;padding:0 10px;font-size:13px;margin-bottom:8px;background:var(--bg);color:var(--txt)">
       <option value="all">📢 Tous les salariés</option>
     </select>
@@ -575,6 +578,11 @@ body.profile-salarie .tabs{display:none}
   </div>
   <div id="messages-sal-compose" style="display:none;margin-bottom:16px;background:#fff;border:1px solid var(--brd);border-radius:12px;padding:16px">
     <div style="font-weight:700;font-size:13px;margin-bottom:10px">✉️ Nouveau message au Bureau</div>
+    <select id="msg-sal-to" style="width:100%;height:36px;border:1px solid var(--brd2);border-radius:8px;padding:0 10px;font-size:13px;margin-bottom:8px;background:var(--bg);color:var(--txt)">
+      <option value="">Bureau (peu importe qui)</option>
+      <option value="Quentin">Bureau — Quentin</option>
+      <option value="Valérie">Bureau — Valérie</option>
+    </select>
     <input id="msg-sal-subject" placeholder="Objet" style="width:100%;height:36px;border:1px solid var(--brd2);border-radius:8px;padding:0 10px;font-size:13px;margin-bottom:8px;box-sizing:border-box">
     <textarea id="msg-sal-body" placeholder="Votre message..." style="width:100%;min-height:80px;border:1px solid var(--brd2);border-radius:8px;padding:8px 10px;font-size:13px;resize:vertical;box-sizing:border-box"></textarea>
     <button onclick="sendSalarieMessage()" style="margin-top:8px;height:38px;padding:0 20px;background:#16a34a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">📤 Envoyer au Bureau</button>
@@ -2905,6 +2913,32 @@ var PROFILES = {
   planningpublic: { name: "Planning (lecture seule)", pin: null, color: "#0891b2", tabs: ["planning"], readOnly: true }
 };
 var _currentProfile = null;
+var _bureauIdentity = localStorage.getItem("bureau_identity") || "";
+function showBureauIdentityModal(){
+  var existing=document.getElementById("bureau-identity-modal");if(existing)existing.remove();
+  var modal=document.createElement("div");modal.id="bureau-identity-modal";
+  modal.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center";
+  var box=document.createElement("div");
+  box.style.cssText="background:#fff;border-radius:14px;padding:26px;max-width:320px;width:92%;text-align:center;box-shadow:0 16px 48px rgba(0,0,0,.2);font-family:DM Sans,sans-serif";
+  var title=document.createElement("div");title.style.cssText="font-family:Syne,sans-serif;font-weight:800;font-size:16px;margin-bottom:6px;color:#1a1916";title.textContent="👋 Qui êtes-vous ?";
+  var sub=document.createElement("div");sub.style.cssText="font-size:12px;color:#7a746c;margin-bottom:18px";sub.textContent="Pour que les salariés sachent qui leur répond.";
+  box.appendChild(title);box.appendChild(sub);
+  var btnRow=document.createElement("div");btnRow.style.cssText="display:flex;gap:10px";
+  ["Quentin","Valérie"].forEach(function(name){
+    var b=document.createElement("button");
+    b.style.cssText="flex:1;height:44px;background:#1a1916;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer";
+    b.textContent=name;
+    b.onclick=function(){
+      _bureauIdentity=name;
+      localStorage.setItem("bureau_identity",name);
+      var lbl=document.getElementById("bureau-identity-label");if(lbl)lbl.textContent=name;
+      modal.remove();
+    };
+    btnRow.appendChild(b);
+  });
+  box.appendChild(btnRow);
+  modal.appendChild(box);document.body.appendChild(modal);
+}
 
 function applyProfile(key) {
   _currentProfile = key;
@@ -2912,7 +2946,10 @@ function applyProfile(key) {
   if(key!=="planningpublic")localStorage.setItem("current_profile", key);
   document.body.classList.toggle("profile-salarie", key==="salarie");
 
-  if(key==="bureau")autoArchiveOldAbsDemandesSilent();
+  if(key==="bureau"){
+    autoArchiveOldAbsDemandesSilent();
+    if(!_bureauIdentity){showBureauIdentityModal();}
+  }
   // Le wrapper contrôle la visibilité du select + point rouge messages
   var salWrap=document.getElementById("salarie-tab-wrap");
   if(salWrap)salWrap.style.display=(key==="salarie")?"block":"none";
@@ -4715,6 +4752,7 @@ function RMESSAGES(){
   var bureauCompose=document.getElementById("messages-bureau-compose");
   var salCompose=document.getElementById("messages-sal-compose");
   if(bureauCompose)bureauCompose.style.display=isBureau?"block":"none";
+  if(isBureau){var lbl=document.getElementById("bureau-identity-label");if(lbl)lbl.textContent=_bureauIdentity||"—";}
   if(salCompose)salCompose.style.display=isSal?"block":"none";
 
   // Populate Bureau "to" select with all salariés
@@ -4759,8 +4797,8 @@ function RMESSAGES(){
     var fromBureau=msg.from==="bureau";
     var isOwn=msg.from===salId;
     var sal=msg.from!=="bureau"?D.salaries.find(function(s){return s.id===msg.from;}):null;
-    var fromName=fromBureau?"🏢 Bureau":(sal?sal.prenom+(sal.nom?" "+sal.nom:""):"?");
-    var toName=msg.to==="all"?"📢 Tous":((D.salaries.find(function(s){return s.id===msg.to;})||{prenom:"Bureau"}).prenom);
+    var fromName=fromBureau?("🏢 Bureau"+(msg.fromName?" ("+msg.fromName+")":"")):(sal?sal.prenom+(sal.nom?" "+sal.nom:""):"?");
+    var toName=msg.to==="all"?"📢 Tous":(msg.to==="bureau"?("Bureau"+(msg.toPerson?" ("+msg.toPerson+")":"")):((D.salaries.find(function(s){return s.id===msg.to;})||{prenom:"Bureau"}).prenom));
 
     // Read status for current viewer
     var readKey=isBureau?"bureau":(salId||"");
@@ -4788,7 +4826,7 @@ function RMESSAGES(){
       var repliesWrap=document.createElement("div");repliesWrap.style.cssText="border-top:1px solid var(--brd2);margin-top:8px;padding-top:8px";
       msg.replies.forEach(function(r){
         var rSal=r.from!=="bureau"?D.salaries.find(function(s){return s.id===r.from;}):null;
-        var rName=r.from==="bureau"?"🏢 Bureau":(rSal?rSal.prenom+(rSal.nom?" "+rSal.nom:""):"?");
+        var rName=r.from==="bureau"?("🏢 Bureau"+(r.fromName?" ("+r.fromName+")":"")):(rSal?rSal.prenom+(rSal.nom?" "+rSal.nom:""):"?");
         var rDiv=document.createElement("div");rDiv.style.cssText="font-size:12px;margin-bottom:4px;padding:6px 8px;background:#f8f7f4;border-radius:6px";
         rDiv.innerHTML="<span style='font-weight:600'>"+rName+"</span> <span style='color:var(--muted);font-size:10px'>"+new Date(r.ts).toLocaleDateString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})+"</span><br>"+r.body;
         repliesWrap.appendChild(rDiv);
@@ -4838,7 +4876,7 @@ function sendMessage(){
   var body=document.getElementById("msg-body").value.trim();
   if(!body){showToast("⚠️ Écrivez un message.");return;}
   if(!D.messages)D.messages=[];
-  D.messages.push({id:"msg_"+Date.now(),from:"bureau",to:to,subject:subject,body:body,ts:Date.now(),readBy:{bureau:true},replies:[]});
+  D.messages.push({id:"msg_"+Date.now(),from:"bureau",fromName:_bureauIdentity||"",to:to,subject:subject,body:body,ts:Date.now(),readBy:{bureau:true},replies:[]});
   document.getElementById("msg-subject").value="";
   document.getElementById("msg-body").value="";
   saveNow();RMESSAGES();showToast("✅ Message envoyé !");
@@ -4847,14 +4885,16 @@ function sendMessage(){
 function sendSalarieMessage(){
   var salId=_salLockedId;
   if(!salId){showToast("⚠️ Espace salarié requis.");return;}
+  var toPerson=document.getElementById("msg-sal-to").value;
   var subject=document.getElementById("msg-sal-subject").value.trim();
   var body=document.getElementById("msg-sal-body").value.trim();
   if(!body){showToast("⚠️ Écrivez un message.");return;}
   if(!D.messages)D.messages=[];
   var readBy={};readBy[salId]=true;
-  D.messages.push({id:"msg_"+Date.now(),from:salId,to:"bureau",subject:subject,body:body,ts:Date.now(),readBy:readBy,replies:[]});
+  D.messages.push({id:"msg_"+Date.now(),from:salId,to:"bureau",toPerson:toPerson||null,subject:subject,body:body,ts:Date.now(),readBy:readBy,replies:[]});
   document.getElementById("msg-sal-subject").value="";
   document.getElementById("msg-sal-body").value="";
+  document.getElementById("msg-sal-to").value="";
   saveNow();RMESSAGES();showToast("✅ Message envoyé au Bureau !");
 }
 
@@ -4880,7 +4920,7 @@ function showReplyModal(msgId){
     var msg=D.messages.find(function(m){return m.id===msgId;});
     if(!msg){modal.remove();return;}
     if(!msg.replies)msg.replies=[];
-    msg.replies.push({from:from,body:body,ts:Date.now()});
+    msg.replies.push({from:from,fromName:from==="bureau"?(_bureauIdentity||""):"",body:body,ts:Date.now()});
     // Mark as unread for the other party
     if(from==="bureau"){Object.keys(msg.readBy||{}).forEach(function(k){if(k!=="bureau")delete msg.readBy[k];});}
     else{delete (msg.readBy||{}).bureau;}
