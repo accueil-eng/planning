@@ -1060,7 +1060,8 @@ function _publishPublicSnapshot(){
     .catch(function(e){console.log("Public snapshot save error:",e);});
   }catch(e){console.log("Public snapshot build error:",e);}
 }
-function _doGithubSave(){
+function _doGithubSave(retryCount){
+  retryCount=retryCount||0;
   // Bloquer toute sauvegarde en mode lecture seule (planning public WhatsApp)
   if(_currentProfile==="planningpublic"){return;}
   var ind=document.getElementById("sind");
@@ -1094,10 +1095,29 @@ function _doGithubSave(){
     },
     body: JSON.stringify(body)
   })
-  .then(function(r){ return r.json(); })
-  .then(function(data){
+  .then(function(r){ return r.json().then(function(data){return {status:r.status,data:data};}); })
+  .then(function(res){
     _pendingSaveCount=Math.max(0,_pendingSaveCount-1);
-    if(data.content) _ghSha = data.content.sha;
+    // Conflit de version (sha obsolète) : recharger le sha actuel et réessayer avec les données les plus récentes
+    if(res.status>=400){
+      if(retryCount<3){
+        console.log("GitHub save conflict (status "+res.status+"), retry "+(retryCount+1)+"/3...");
+        fetch(GH_API+"?t="+Date.now(),{headers:{"Authorization":"token "+GH_TOKEN,"Accept":"application/vnd.github.v3+json"}})
+        .then(function(r2){return r2.json();})
+        .then(function(fresh){
+          if(fresh&&fresh.sha)_ghSha=fresh.sha;
+          setTimeout(function(){_doGithubSave(retryCount+1);},800);
+        })
+        .catch(function(){setTimeout(function(){_doGithubSave(retryCount+1);},800);});
+        return;
+      } else {
+        console.log("GitHub save failed after 3 retries:",res.data);
+        var indF=document.getElementById("sind");
+        if(indF){indF.textContent="⚠️ Erreur sync — réessayez";indF.style.opacity="1";}
+        return;
+      }
+    }
+    if(res.data.content) _ghSha = res.data.content.sha;
     var now=new Date();
     var readable=now.toLocaleDateString("fr-FR",{day:"numeric",month:"long"})+" à "+String(now.getHours()).padStart(2,"0")+"h"+String(now.getMinutes()).padStart(2,"0");
     var ind2=document.getElementById("sind");
@@ -1112,8 +1132,12 @@ function _doGithubSave(){
   .catch(function(e){
     _pendingSaveCount=Math.max(0,_pendingSaveCount-1);
     console.log("GitHub save error:", e);
-    var ind3=document.getElementById("sind");
-    if(ind3){ind3.textContent="⚠️ Erreur sync";ind3.style.opacity="1";}
+    if(retryCount<3){
+      setTimeout(function(){_doGithubSave(retryCount+1);},1200);
+    } else {
+      var ind3=document.getElementById("sind");
+      if(ind3){ind3.textContent="⚠️ Erreur sync — réessayez";ind3.style.opacity="1";}
+    }
   });
 }
 
