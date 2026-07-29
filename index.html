@@ -5599,6 +5599,23 @@ function addChantierFromBilan(){
     showToast("✅ Chantier ajouté — renseignez ses heures janvier à juin ci-dessous");
   };
 }
+// Supprime un chantier directement depuis l'onglet Bilan (ex: doublon créé par erreur
+// lors d'une insertion). Nettoie aussi les éventuelles heures manuelles associées.
+function deleteChantierFromBilan(chId,annee){
+  var ch=D.chantiers.find(function(c){return c.id===chId;});
+  if(!ch)return;
+  if(!confirm("Supprimer le chantier \""+(ch.ref?ch.ref+" - ":"")+ch.nom+"\" ?\n\nCette action est définitive."))return;
+  D.chantiers=D.chantiers.filter(function(c){return c.id!==chId;});
+  // Nettoyage des heures manuelles saisies dans le Bilan pour ce chantier
+  if(D.bilanManual){
+    Object.keys(D.bilanManual).forEach(function(k){
+      if(k.indexOf(chId+"|")===0)delete D.bilanManual[k];
+    });
+  }
+  saveNow();
+  RBILAN();
+  showToast("🗑️ Chantier supprimé");
+}
 function setBilanManual(id,mo,annee,value){
   if(!D.bilanManual)D.bilanManual={};
   var key=id+"|"+mo+"|"+annee;
@@ -5778,7 +5795,8 @@ function RBILAN(){
   function renderRow(item,ri,colorDot){
     var rowBg=ri%2===0?"#fff":"#f8f7f4";
     var rowHtml="<tr style='cursor:pointer' onclick='toggleBilanDetail(\""+item._id+"\")'>";
-    rowHtml+="<td style='border:1px solid #e2e8f0;padding:5px 10px;font-weight:500;background:"+rowBg+"'>"+(colorDot?"<span style='display:inline-block;width:8px;height:8px;border-radius:50%;background:"+colorDot+";margin-right:6px'></span>":"")+item.nom+" <span style='font-size:9px;color:#94a3b8'>\u25BE</span></td>";
+    var delBtn=(!item.isSpecial)?("<span onclick='event.stopPropagation();deleteChantierFromBilan(\""+item._id+"\","+annee+")' title='Supprimer ce chantier' style='float:right;color:#dc2626;font-weight:700;cursor:pointer;padding:0 4px'>×</span>"):"";
+    rowHtml+="<td style='border:1px solid #e2e8f0;padding:5px 10px;font-weight:500;background:"+rowBg+"'>"+delBtn+(colorDot?"<span style='display:inline-block;width:8px;height:8px;border-radius:50%;background:"+colorDot+";margin-right:6px'></span>":"")+item.nom+" <span style='font-size:9px;color:#94a3b8'>\u25BE</span></td>";
     for(var mm=1;mm<=12;mm++){
       var mh=item.byMonth[mm]||0;
       var calcH=(item.byMonthCalc&&item.byMonthCalc[mm])||0;
