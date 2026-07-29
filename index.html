@@ -1118,14 +1118,17 @@ var _saveAgainNeeded=false;
 function save(){
   if(_currentProfile==="planningpublic")return;
   checkPlanningChangeForNotif();
-  // Always save to localStorage immediately
-  localStorage.setItem(SK, JSON.stringify(D));
-  clearTimeout(_saveTimer);
   if(_currentProfile==="salarie"){
-    // Les salariés n'ont pas de token : on passe par le service sécurisé (Worker).
+    // IMPORTANT : ne jamais écrire dans le cache local partagé (SK) depuis le profil salarié.
+    // Sa copie de D est volontairement réduite (pas de ddn/visite/téléphone/etc.) — l'écrire dans
+    // le même cache que le Bureau écraserait ces données lors d'un prochain chargement sur le même appareil.
+    clearTimeout(_saveTimer);
     _saveTimer = setTimeout(function(){ syncMyPrivateData(); }, 2000);
     return;
   }
+  // Always save to localStorage immediately
+  localStorage.setItem(SK, JSON.stringify(D));
+  clearTimeout(_saveTimer);
   // Debounce GitHub save
   _saveTimer = setTimeout(function(){
     if(_pendingSaveCount>0){_saveAgainNeeded=true;return;} // a save is already in flight, queue another after it completes
@@ -1138,12 +1141,13 @@ function save(){
 function saveNow(){
   if(_currentProfile==="planningpublic")return;
   checkPlanningChangeForNotif();
-  localStorage.setItem(SK, JSON.stringify(D));
-  clearTimeout(_saveTimer);
   if(_currentProfile==="salarie"){
+    clearTimeout(_saveTimer);
     syncMyPrivateData();
     return;
   }
+  localStorage.setItem(SK, JSON.stringify(D));
+  clearTimeout(_saveTimer);
   if(_pendingSaveCount>0){_saveAgainNeeded=true;return;}
   _doGithubSave();
 }
@@ -2282,7 +2286,7 @@ function RS(){
   var table=document.createElement("table");
   table.style.cssText="width:100%;border-collapse:collapse;font-size:12px";
   var thead=table.createTHead();var hr=thead.insertRow();
-  ["","Nom","📄 Contrat","💶 Taux €/h","📱 Téléphone","🎂 Anniversaire","🏥 Visite médicale",""].forEach(function(h){
+  ["","Nom","📄 Contrat","💶 Taux €/h","📱 Téléphone","☎️ Tél. personnel","🎂 Anniversaire","🏥 Visite médicale",""].forEach(function(h){
     var th=document.createElement("th");th.textContent=h;
     th.style.cssText="padding:8px 10px;text-align:left;background:#e2e8f0;border:1px solid var(--brd);font-size:11px;font-weight:600;white-space:nowrap";
     hr.appendChild(th);
@@ -2323,14 +2327,14 @@ function RS(){
     tdTaux.textContent=sal.taux!=null?sal.taux.toFixed(2)+" €/h":"—";
     // Téléphone
     var tdTel=tr.insertCell();tdTel.style.cssText="padding:8px 10px;border:1px solid var(--brd);color:var(--muted)";
-    var telParts=[];
     if(sal.whatsapp){
-      telParts.push("<div>+"+sal.whatsapp+" <span style='font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin-left:4px;"+(sal.telType==="perso"?"background:#fce7f3;color:#db2777":"background:#e0f2fe;color:#0891b2")+"'>"+(sal.telType==="perso"?"PERSO":"PRO")+"</span></div>");
+      tdTel.innerHTML="+"+sal.whatsapp+" <span style='font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin-left:4px;"+(sal.telType==="perso"?"background:#fce7f3;color:#db2777":"background:#e0f2fe;color:#0891b2")+"'>"+(sal.telType==="perso"?"PERSO":"PRO")+"</span>";
+    } else {
+      tdTel.textContent="—";
     }
-    if(sal.telPerso){
-      telParts.push("<div style='margin-top:2px'>"+sal.telPerso+" <span style='font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin-left:4px;background:#ede9fe;color:#6d28d9'>PERSO</span></div>");
-    }
-    tdTel.innerHTML=telParts.length?telParts.join(""):"—";
+    // Téléphone personnel (colonne à part)
+    var tdTelPerso=tr.insertCell();tdTelPerso.style.cssText="padding:8px 10px;border:1px solid var(--brd);color:var(--muted)";
+    tdTelPerso.textContent=sal.telPerso||"—";
     // Anniversaire
     var tdBday=tr.insertCell();tdBday.style.cssText="padding:8px 10px;border:1px solid var(--brd)";
     if(sal.ddn){
