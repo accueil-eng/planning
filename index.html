@@ -648,7 +648,7 @@ if(!D.grille)D.grille={
   trajet:{Z1A:0,Z1B:0,Z2:0,Z3:0,Z4:0,Z5:0,Z6:0,Z7:0,Z8:0,Z9:0,Z10:0},
   transport:{Z1A:0,Z1B:0,Z2:0,Z3:0,Z4:0,Z5:0,Z6:0,Z7:0,Z8:0,Z9:0,Z10:0}
 };
-["cells","rowChantiers","livraisons","vehAssign","vehIndispo","rttReport","ptReview","planningNotifSent","ptWeekValidations","rttManual","chHoursValidated","bureauWeekValidations","ptObservations"].forEach(function(k){if(!D[k])D[k]={};});
+["cells","rowChantiers","livraisons","vehAssign","vehIndispo","rttReport","ptReview","planningNotifSent","ptWeekValidations","rttManual","chHoursValidated","bureauWeekValidations","ptObservations","bilanManual"].forEach(function(k){if(!D[k])D[k]={};});
 
 var DEFAULT_PROCEDURES=[
   {id:"proc_canicule",titre:"🌡️ Canicule / Fortes chaleurs",couleur:"#dc2626",etapes:[
@@ -872,7 +872,7 @@ function loadPublicPlanning(cb){
     if(!pub){ if(cb)cb(); return; }
     D = pub;
     ["chantiers","salaries","absences","vehicules","formations","rdvs"].forEach(function(k){if(!D[k])D[k]=[];});
-    ["cells","rowChantiers","livraisons","vehAssign","vehIndispo","rttReport","ptReview","planningNotifSent","ptWeekValidations","rttManual","chHoursValidated","bureauWeekValidations","ptObservations"].forEach(function(k){if(!D[k])D[k]={};});
+    ["cells","rowChantiers","livraisons","vehAssign","vehIndispo","rttReport","ptReview","planningNotifSent","ptWeekValidations","rttManual","chHoursValidated","bureauWeekValidations","ptObservations","bilanManual"].forEach(function(k){if(!D[k])D[k]={};});
     if(!D.absDemandes)D.absDemandes=[];
     if(!D.pointages)D.pointages={};
     if(!D.grille)D.grille={trajet:{},transport:{}};
@@ -923,7 +923,7 @@ function loadFromCloud(cb){
         }
         D = remote;
         ["chantiers","salaries","absences","vehicules","formations","rdvs"].forEach(function(k){if(!D[k])D[k]=[];});
-        ["cells","rowChantiers","livraisons","vehAssign","vehIndispo","rttReport","ptReview","planningNotifSent","ptWeekValidations","rttManual","chHoursValidated","bureauWeekValidations","ptObservations"].forEach(function(k){if(!D[k])D[k]={};});
+        ["cells","rowChantiers","livraisons","vehAssign","vehIndispo","rttReport","ptReview","planningNotifSent","ptWeekValidations","rttManual","chHoursValidated","bureauWeekValidations","ptObservations","bilanManual"].forEach(function(k){if(!D[k])D[k]={};});
 if(!D.absDemandes)D.absDemandes=[];
         if(!D.pointages)D.pointages={};
         if(!D.grille)D.grille={trajet:{},transport:{}};
@@ -1244,7 +1244,7 @@ function importJSON(ev){
       if(!confirm("Remplacer toutes les données par cette sauvegarde ?"))return;
       D=data;
       ["chantiers","salaries","absences","vehicules"].forEach(function(k){if(!D[k])D[k]=[];});
-      ["cells","rowChantiers","livraisons","vehAssign","vehIndispo","rttReport","ptReview","planningNotifSent","ptWeekValidations","rttManual","chHoursValidated","bureauWeekValidations","ptObservations"].forEach(function(k){if(!D[k])D[k]={};});
+      ["cells","rowChantiers","livraisons","vehAssign","vehIndispo","rttReport","ptReview","planningNotifSent","ptWeekValidations","rttManual","chHoursValidated","bureauWeekValidations","ptObservations","bilanManual"].forEach(function(k){if(!D[k])D[k]={};});
 if(!D.absDemandes)D.absDemandes=[];
       save();RP();RC();RS();RA();RV();RF();RRDV();RANALYSE();RGANTT();RPOINTAGE();RINDEM();
     }catch(err){alert("Fichier invalide: "+err.message);}
@@ -5393,6 +5393,15 @@ function exportRTTRecapCSV(){
   showToast("📥 Export téléchargé !");
 }
 
+function setBilanManual(id,mo,annee,value){
+  if(!D.bilanManual)D.bilanManual={};
+  var key=id+"|"+mo+"|"+annee;
+  var v=parseFloat(value);
+  if(!v){delete D.bilanManual[key];}
+  else{D.bilanManual[key]=v;}
+  save();
+  RBILAN();
+}
 function RBILAN(){
   var wrap=document.getElementById("bilan-wrap");
   if(!wrap)return;
@@ -5506,11 +5515,37 @@ function RBILAN(){
     });
   });
 
+  // ── Fusion des heures saisies manuellement (mois sans pointage, ex: avant l'utilisation de l'outil) ──
+  if(!D.bilanManual)D.bilanManual={};
+  function snapshotCalc(obj){obj.byMonthCalc=Object.assign({},obj.byMonth);}
+  Object.keys(bilan).forEach(function(k){snapshotCalc(bilan[k]);});
+  Object.keys(special).forEach(function(k){snapshotCalc(special[k]);});
+  D.chantiers.forEach(function(ch){
+    if(ch.ref==="9200"||ch.ref==="9300")return;
+    for(var moM=1;moM<=12;moM++){
+      var mkey=ch.id+"|"+moM+"|"+annee;
+      var mv=parseFloat(D.bilanManual[mkey]);
+      if(!mv)continue;
+      if(!bilan[ch.id]){bilan[ch.id]={nom:(ch.ref?ch.ref+" - ":"")+ch.nom,color:ch.color,totalH:0,bySalarie:{},byMonth:{},byMonthCalc:{}};}
+      bilan[ch.id].byMonth[moM]=(bilan[ch.id].byMonth[moM]||0)+mv;
+      bilan[ch.id].totalH+=mv;
+    }
+  });
+  ["bureau","depot","formation","intemp"].forEach(function(sk){
+    for(var moS=1;moS<=12;moS++){
+      var mkeyS="special_"+sk+"|"+moS+"|"+annee;
+      var mvS=parseFloat(D.bilanManual[mkeyS]);
+      if(!mvS)continue;
+      special[sk].byMonth[moS]=(special[sk].byMonth[moS]||0)+mvS;
+      special[sk].totalH+=mvS;
+    }
+  });
+
   var chIds=Object.keys(bilan).sort(function(a,b){return bilan[b].totalH-bilan[a].totalH;});
   var specialIds=Object.keys(special).filter(function(k){return special[k].totalH>0;});
   var totalSpecialIds=specialIds.filter(function(k){return ["interim","stagiaire","apprenti"].indexOf(k)<0;}); // informational only, not added to grand total
 
-  if(!chIds.length&&!specialIds.length){
+  if(!chIds.length&&!specialIds.length&&!Object.keys(D.bilanManual).length){
     wrap.innerHTML="<div class='empty'><div class='empty-icon'>\uD83D\uDCCA</div><p>Aucune heure saisie pour "+annee+". Renseignez les heures dans l'onglet Pointage.</p></div>";
     return;
   }
@@ -5528,7 +5563,18 @@ function RBILAN(){
     rowHtml+="<td style='border:1px solid #e2e8f0;padding:5px 10px;font-weight:500;background:"+rowBg+"'>"+(colorDot?"<span style='display:inline-block;width:8px;height:8px;border-radius:50%;background:"+colorDot+";margin-right:6px'></span>":"")+item.nom+" <span style='font-size:9px;color:#94a3b8'>\u25BE</span></td>";
     for(var mm=1;mm<=12;mm++){
       var mh=item.byMonth[mm]||0;
-      rowHtml+="<td style='border:1px solid #e2e8f0;padding:5px 6px;text-align:center;background:"+rowBg+";color:"+(mh>0?"#1a1916":"#cbd5e1")+"'>"+(mh>0?mh.toFixed(1):"\u2014")+"</td>";
+      var calcH=(item.byMonthCalc&&item.byMonthCalc[mm])||0;
+      if(calcH===0){
+        var mkeyC=item._id+"|"+mm+"|"+annee;
+        var manualVal=(D.bilanManual&&D.bilanManual[mkeyC])?D.bilanManual[mkeyC]:"";
+        rowHtml+="<td style='border:1px solid #e2e8f0;padding:1px;text-align:center;background:"+(manualVal?"#fffbeb":rowBg)+"'>"+
+          "<input type='number' step='0.5' value='"+manualVal+"' placeholder='—' title='Saisie manuelle (aucun pointage ce mois-ci)' "+
+          "style='width:40px;height:22px;border:1px solid "+(manualVal?"#fde68a":"#e2e8f0")+";border-radius:3px;text-align:center;font-size:10px;outline:none;background:transparent;color:#92400e' "+
+          "onclick='event.stopPropagation()' onchange='setBilanManual(\""+item._id+"\","+mm+","+annee+",this.value)'>"+
+          "</td>";
+      } else {
+        rowHtml+="<td style='border:1px solid #e2e8f0;padding:5px 6px;text-align:center;background:"+rowBg+";color:#1a1916'>"+mh.toFixed(1)+"</td>";
+      }
     }
     rowHtml+="<td style='border:1px solid #e2e8f0;padding:5px 10px;text-align:center;font-weight:700;background:#ede9fe;color:#7c3aed'>"+item.totalH.toFixed(1)+"h</td>";
     rowHtml+="</tr>";
