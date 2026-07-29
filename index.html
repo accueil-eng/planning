@@ -2426,13 +2426,14 @@ function showQRCode(salId){
 }
 
 function printQRCode(nom,qrImgUrl){
-  var w=window.open("","_blank");
-  w.document.write("<html><head><title>QR Code - "+nom+"</title><style>body{font-family:sans-serif;text-align:center;padding:40px}h2{margin-bottom:4px}p{color:#666;font-size:13px;margin-bottom:24px}img{border:1px solid #ddd;border-radius:8px}</style></head><body>"+
-    "<h2>"+nom+"</h2><p>Scannez ce QR code pour accéder à votre espace<br>(Planning · Pointage · Demandes d'absence)</p>"+
-    "<img src='"+qrImgUrl+"' width='280' height='280'>"+
-    "</body></html>");
-  w.document.close();
-  setTimeout(function(){w.print();},400);
+  // Impression directe de la zone QR déjà affichée (pas de nouvelle fenêtre :
+  // évite les blocages de pop-up qui empêchaient l'impression).
+  var style=document.createElement("style");
+  style.id="qr-print-style";
+  style.textContent="@media print{body *{visibility:hidden}#qr-print-area,#qr-print-area *{visibility:visible}#qr-print-area{position:fixed;top:40px;left:0;right:0;text-align:center}}";
+  document.head.appendChild(style);
+  window.print();
+  setTimeout(function(){var s=document.getElementById("qr-print-style");if(s)s.remove();},1000);
 }
 
 // ── ABSENCES ──
