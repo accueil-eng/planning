@@ -491,6 +491,7 @@ body.profile-salarie .tabs{display:none}
     </div>
     <button class="btn btn-p" onclick="exportBilanCSV()" style="background:#16a34a;border-color:#16a34a">📥 Export Excel</button>
     <button class="btn btn-o" onclick="printBilanAnnuel()">🖨️ Imprimer</button>
+    <button class="btn btn-p" onclick="addChantierFromBilan()" style="background:#7c3aed;border-color:#7c3aed">+ Insérer un chantier</button>
   </div>
   <div id="bilan-wrap" style="overflow-x:auto"></div>
 </div>
@@ -5564,6 +5565,40 @@ function exportRTTRecapCSV(){
   showToast("📥 Export téléchargé !");
 }
 
+// Insertion rapide d'un chantier depuis l'onglet Bilan (ex: chantier réalisé avant l'utilisation
+// réelle de l'outil, janvier-juin 2026, pour pouvoir y saisir des heures manuellement).
+function addChantierFromBilan(){
+  var existing=document.getElementById("bilan-add-modal");if(existing)existing.remove();
+  var modal=document.createElement("div");modal.id="bilan-add-modal";
+  modal.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center";
+  var box=document.createElement("div");
+  box.style.cssText="background:#fff;border-radius:14px;padding:24px 28px;max-width:360px;width:92%;box-shadow:0 16px 48px rgba(0,0,0,.2);font-family:DM Sans,sans-serif";
+  box.innerHTML="<div style='font-family:Syne,sans-serif;font-weight:800;font-size:15px;margin-bottom:4px;color:#1a1916'>+ Insérer un chantier</div>"+
+    "<div style='font-size:11px;color:#7a746c;margin-bottom:16px'>Pour saisir des heures réalisées avant juillet 2026 (janvier à juin).</div>"+
+    "<label style='display:block;font-size:12px;font-weight:500;color:#475569;margin-bottom:4px'>Code chantier</label>"+
+    "<input id='bam-ref' placeholder='ex: 250100' maxlength='20' style='width:100%;height:34px;border:1px solid #c5bfb5;border-radius:6px;padding:0 10px;font-size:13px;margin-bottom:10px;box-sizing:border-box'>"+
+    "<label style='display:block;font-size:12px;font-weight:500;color:#475569;margin-bottom:4px'>Nom du chantier *</label>"+
+    "<input id='bam-nom' placeholder='Nom du chantier' maxlength='80' style='width:100%;height:34px;border:1px solid #c5bfb5;border-radius:6px;padding:0 10px;font-size:13px;margin-bottom:16px;box-sizing:border-box'>"+
+    "<div style='display:flex;gap:8px'>"+
+    "<button id='bam-ok' style='flex:1;height:38px;background:#1a1916;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer'>Ajouter</button>"+
+    "<button id='bam-cancel' style='height:38px;padding:0 16px;background:none;border:1px solid #c5bfb5;border-radius:8px;font-size:13px;cursor:pointer'>Annuler</button>"+
+    "</div>";
+  modal.appendChild(box);document.body.appendChild(modal);
+  modal.onclick=function(e){if(e.target===modal)modal.remove();};
+  document.getElementById("bam-cancel").onclick=function(){modal.remove();};
+  document.getElementById("bam-ok").onclick=function(){
+    var nom=document.getElementById("bam-nom").value.trim();
+    if(!nom){alert("Le nom du chantier est requis.");return;}
+    var ref=document.getElementById("bam-ref").value.trim();
+    D.chantiers.push({id:"ch_"+Date.now(),ref:ref,nom:nom,color:COLORS[D.chantiers.length%COLORS.length]});
+    saveNow();
+    modal.remove();
+    // S'assure qu'on est bien sur 2026 pour voir immédiatement les cases modifiables
+    var yEl=document.getElementById("bilan-annee");if(yEl)yEl.value="2026";
+    RBILAN();
+    showToast("✅ Chantier ajouté — renseignez ses heures janvier à juin ci-dessous");
+  };
+}
 function setBilanManual(id,mo,annee,value){
   if(!D.bilanManual)D.bilanManual={};
   var key=id+"|"+mo+"|"+annee;
@@ -5594,6 +5629,14 @@ function RBILAN(){
 
   var MOIS_NOMS=["","Jan","F\u00e9v","Mar","Avr","Mai","Jun","Jul","Ao\u00fb","Sep","Oct","Nov","D\u00e9c"];
   var bilan={};
+  // En 2026 (phase de test), on pré-affiche tous les chantiers même sans heures calculées,
+  // pour pouvoir y saisir manuellement les heures de janvier à juin.
+  if(annee===2026){
+    D.chantiers.forEach(function(ch){
+      if(ch.ref==="9200"||ch.ref==="9300")return;
+      bilan[ch.id]={nom:(ch.ref?ch.ref+" - ":"")+ch.nom,color:ch.color,totalH:0,bySalarie:{},byMonth:{}};
+    });
+  }
   // Special rows: Formation, Intempéries (from Pointage rubriques, in hours not days)
   var special={
     bureau:{nom:"\uD83C\uDFE2 Bureau (9200)",totalH:0,bySalarie:{},byMonth:{},isSpecial:true},
@@ -5694,6 +5737,7 @@ function RBILAN(){
   D.chantiers.forEach(function(ch){
     if(ch.ref==="9200"||ch.ref==="9300")return;
     for(var moM=1;moM<=12;moM++){
+      if(!(annee===2026&&moM<=6))continue; // saisie manuelle limitée à janvier-juin 2026 (phase de test)
       var mkey=ch.id+"|"+moM+"|"+annee;
       if(!(mkey in D.bilanManual))continue;
       var mv=parseFloat(D.bilanManual[mkey])||0;
@@ -5705,6 +5749,7 @@ function RBILAN(){
   });
   ["bureau","depot","formation","intemp"].forEach(function(sk){
     for(var moS=1;moS<=12;moS++){
+      if(!(annee===2026&&moS<=6))continue; // saisie manuelle limitée à janvier-juin 2026 (phase de test)
       var mkeyS="special_"+sk+"|"+moS+"|"+annee;
       if(!(mkeyS in D.bilanManual))continue;
       var mvS=parseFloat(D.bilanManual[mkeyS])||0;
@@ -5737,14 +5782,19 @@ function RBILAN(){
     for(var mm=1;mm<=12;mm++){
       var mh=item.byMonth[mm]||0;
       var calcH=(item.byMonthCalc&&item.byMonthCalc[mm])||0;
-      var mkeyC=item._id+"|"+mm+"|"+annee;
-      var hasOverride=D.bilanManual&&(mkeyC in D.bilanManual);
-      var displayVal=hasOverride?mh:calcH;
-      rowHtml+="<td style='border:1px solid #e2e8f0;padding:1px;text-align:center;background:"+(hasOverride?"#fffbeb":rowBg)+"'>"+
-        "<input type='number' step='0.5' value='"+(displayVal?displayVal:"")+"' placeholder='—' title='"+(hasOverride?"Valeur saisie manuellement (écrase le calcul automatique)":"Cliquer pour saisir/corriger manuellement")+"' "+
-        "style='width:40px;height:22px;border:1px solid "+(hasOverride?"#fde68a":"transparent")+";border-radius:3px;text-align:center;font-size:10px;outline:none;background:transparent;color:"+(hasOverride?"#92400e":"#1a1916")+"' "+
-        "onclick='event.stopPropagation()' onchange='setBilanManual(\""+item._id+"\","+mm+","+annee+",this.value)'>"+
-        "</td>";
+      var isEditablePeriod=(annee===2026&&mm<=6); // Exception : phase de test, avant utilisation réelle de l'outil (juillet 2026)
+      if(isEditablePeriod){
+        var mkeyC=item._id+"|"+mm+"|"+annee;
+        var hasOverride=D.bilanManual&&(mkeyC in D.bilanManual);
+        var displayVal=hasOverride?mh:calcH;
+        rowHtml+="<td style='border:1px solid #e2e8f0;padding:1px;text-align:center;background:"+(hasOverride?"#fffbeb":rowBg)+"'>"+
+          "<input type='number' step='0.5' value='"+(displayVal?displayVal:"")+"' placeholder='—' title='"+(hasOverride?"Valeur saisie manuellement (écrase le calcul automatique)":"Cliquer pour saisir/corriger manuellement — mois antérieur à l'utilisation réelle de l'outil")+"' "+
+          "style='width:40px;height:22px;border:1px solid "+(hasOverride?"#fde68a":"transparent")+";border-radius:3px;text-align:center;font-size:10px;outline:none;background:transparent;color:"+(hasOverride?"#92400e":"#1a1916")+"' "+
+          "onclick='event.stopPropagation()' onchange='setBilanManual(\""+item._id+"\","+mm+","+annee+",this.value)'>"+
+          "</td>";
+      } else {
+        rowHtml+="<td style='border:1px solid #e2e8f0;padding:5px 6px;text-align:center;background:"+rowBg+";color:"+(mh>0?"#1a1916":"#cbd5e1")+"'>"+(mh>0?mh.toFixed(1):"\u2014")+"</td>";
+      }
     }
     rowHtml+="<td style='border:1px solid #e2e8f0;padding:5px 10px;text-align:center;font-weight:700;background:#ede9fe;color:#7c3aed'>"+item.totalH.toFixed(1)+"h</td>";
     rowHtml+="</tr>";
