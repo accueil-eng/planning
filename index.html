@@ -7642,6 +7642,14 @@ function printPointageBureau(){
     h+="<div style='font-size:9px;color:#888;margin:8px 0 0;text-align:right'>"+
       (salValidated?"👤✅ Validé salarié":"👤⏳ Non validé salarié")+" — "+
       (bureauValidated?"🏢✅ Validé Bureau":"🏢⏳ Non validé Bureau")+"</div>";
+    var obsKeyB=mois+"|"+annee+"|"+sal.id;
+    var obsValB=D.ptObservations&&D.ptObservations[obsKeyB];
+    if(obsValB){
+      h+="<div style='margin-top:6px;padding:6px 10px;background:#fffbeb;border:1px solid #fde68a;border-radius:4px'>";
+      h+="<div style='font-size:9px;font-weight:700;color:#92400e'>📝 OBSERVATION</div>";
+      h+="<div style='font-size:10px;color:#78350f;white-space:pre-wrap'>"+obsValB.replace(/</g,"&lt;")+"</div>";
+      h+="</div>";
+    }
     h+="</div>";
   });
 
