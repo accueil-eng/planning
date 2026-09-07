@@ -3083,8 +3083,8 @@ function pinRemainingMin(key){
 
 var PROFILES = {
   bureau: { name: "Bureau", pins: [
-      {name:"Quentin", pin:"03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"},
-      {name:"Vincent", pin:"db2e7f1bd5ab9968ae76199b7cc74795ca7404d5a08d78567715ce532f9d2669"},
+      {name:"Quentin", pin:"03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4", excludeTabs:["salaries"]},
+      {name:"Vincent", pin:"db2e7f1bd5ab9968ae76199b7cc74795ca7404d5a08d78567715ce532f9d2669", excludeTabs:["salaries"]},
       {name:"Valérie", pin:"e8151b2c92fd188cec72b573a289fefc9d06d3116ba4eb2c8a8719ebf15c1270"}
     ], color: "#db2777", tabs: ["planning","rdv","chantiers","salaries","absences","vehicules","formation","pointage","indemnites","urgences","messages"], readOnly: false },
   analyse: { name: "Analyse", pin: "e8151b2c92fd188cec72b573a289fefc9d06d3116ba4eb2c8a8719ebf15c1270", color: "#0891b2", tabs: ["gantt","bilan","rttrecap"], readOnly: false },
@@ -3119,6 +3119,18 @@ function showBureauIdentityModal(){
   modal.appendChild(box);document.body.appendChild(modal);
 }
 
+// Renvoie les onglets accessibles pour le profil (et la personne, côté Bureau) actuellement connecté(e)
+function getEffectiveTabs(){
+  var p = PROFILES[_currentProfile];
+  if(!p)return [];
+  if(_currentProfile==="bureau"&&p.pins){
+    var entry=p.pins.find(function(e){return e.name===_bureauIdentity;});
+    if(entry&&entry.excludeTabs){
+      return p.tabs.filter(function(t){return entry.excludeTabs.indexOf(t)<0;});
+    }
+  }
+  return p.tabs;
+}
 function applyProfile(key) {
   _currentProfile = key;
   var p = PROFILES[key];
@@ -3144,12 +3156,13 @@ function applyProfile(key) {
   if(nm) nm.textContent = p.name;
 
   // Show/hide tabs
+  var effectiveTabs = getEffectiveTabs();
   document.querySelectorAll(".tb").forEach(function(btn){
     var onclick = btn.getAttribute("onclick") || "";
     var match = onclick.match(/TAB\('([^']+)'\)/);
     var tabName = match ? match[1] : null;
     if(tabName){
-      var allowed = p.tabs.indexOf(tabName) >= 0;
+      var allowed = effectiveTabs.indexOf(tabName) >= 0;
       btn.style.display = allowed ? "" : "none";
     }
   });
@@ -3158,7 +3171,7 @@ function applyProfile(key) {
   var activePg = document.querySelector(".pg.on");
   if(activePg){
     var pgName = activePg.id.replace("pg-","");
-    if(p.tabs.indexOf(pgName) < 0) TAB(p.tabs[0]);
+    if(effectiveTabs.indexOf(pgName) < 0) TAB(effectiveTabs[0]);
   }
 
   // Lock/unlock planning for Chantier (read-only)
