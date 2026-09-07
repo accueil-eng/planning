@@ -7510,16 +7510,14 @@ function validateMyWeek(salId,semaine,annee){
 
 function renderPtModificationsList(){
   var banner=document.getElementById("ptmodifications-banner");
-  if(!banner){console.log("DEBUG: ptmodifications-banner NOT FOUND");return;}
+  if(!banner)return;
   if(!D.ptModifications)D.ptModifications={};
   var keys=Object.keys(D.ptModifications);
-  console.log("DEBUG ptModifications keys:",keys.length, JSON.stringify(D.ptModifications));
   var mods=keys.map(function(k){return D.ptModifications[k];});
-  if(!mods.length){banner.style.display="none";return;}
+  if(!mods.length||!(_currentProfile==="bureau"&&_bureauIdentity==="Valérie")){banner.style.display="none";return;}
   var names=mods.map(function(m){return m.nom+" (S"+m.semaine+")";}).join(", ");
   banner.textContent="⚠️ Pointage(s) modifié(s) après validation : "+names+" — Cliquer pour vérifier";
   banner.style.display="block";
-  console.log("DEBUG: banner shown with",names);
 }
 
 function dismissPtModification(key){
@@ -7536,9 +7534,9 @@ function renderPtValidationsList(){
   if(!D.ptWeekValidations)D.ptWeekValidations={};
   var entries=Object.keys(D.ptWeekValidations).map(function(k){return D.ptWeekValidations[k];}).sort(function(a,b){return a.ts-b.ts;});
 
-  // Mettre à jour la bannière visible depuis tous les onglets
+  // Mettre à jour la bannière visible depuis tous les onglets (Valérie uniquement)
   if(banner){
-    if(entries.length){
+    if(entries.length&&_currentProfile==="bureau"&&_bureauIdentity==="Valérie"){
       var names=entries.map(function(e){return e.nom+" (S"+e.semaine+")";}).join(", ");
       banner.textContent="📋 Pointage(s) en attente de validation Bureau : "+names+" — Cliquer pour traiter";
       banner.style.display="block";
