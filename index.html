@@ -574,7 +574,7 @@ body.profile-salarie .tabs{display:none}
   <div id="messages-bureau-compose" style="display:none;margin-bottom:16px;background:#fff;border:1px solid var(--brd);border-radius:12px;padding:16px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       <div style="font-weight:700;font-size:13px">✉️ Nouveau message</div>
-      <div style="font-size:11px;color:var(--muted)">Vous écrivez en tant que <b id="bureau-identity-label"></b> · <span style="text-decoration:underline;cursor:pointer;color:#0891b2" onclick="showBureauIdentityModal()">changer</span></div>
+      <div style="font-size:11px;color:var(--muted)">Vous écrivez en tant que <b id="bureau-identity-label"></b></div>
     </div>
     <select id="msg-to" style="width:100%;height:36px;border:1px solid var(--brd2);border-radius:8px;padding:0 10px;font-size:13px;margin-bottom:8px;background:var(--bg);color:var(--txt)">
       <option value="all">📢 Tous les salariés</option>
@@ -3082,7 +3082,11 @@ function pinRemainingMin(key){
 }
 
 var PROFILES = {
-  bureau: { name: "Bureau", pin: "e8151b2c92fd188cec72b573a289fefc9d06d3116ba4eb2c8a8719ebf15c1270", color: "#db2777", tabs: ["planning","rdv","chantiers","salaries","absences","vehicules","formation","pointage","indemnites","urgences","messages"], readOnly: false },
+  bureau: { name: "Bureau", pins: [
+      {name:"Quentin", pin:"03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"},
+      {name:"Vincent", pin:"db2e7f1bd5ab9968ae76199b7cc74795ca7404d5a08d78567715ce532f9d2669"},
+      {name:"Valérie", pin:"e8151b2c92fd188cec72b573a289fefc9d06d3116ba4eb2c8a8719ebf15c1270"}
+    ], color: "#db2777", tabs: ["planning","rdv","chantiers","salaries","absences","vehicules","formation","pointage","indemnites","urgences","messages"], readOnly: false },
   analyse: { name: "Analyse", pin: "e8151b2c92fd188cec72b573a289fefc9d06d3116ba4eb2c8a8719ebf15c1270", color: "#0891b2", tabs: ["gantt","bilan","rttrecap"], readOnly: false },
   salarie: { name: "Salarié", pin: null, color: "#16a34a", tabs: ["planning","absdemande","pointage","monrtt","urgences","messages"], readOnly: true },
   planningpublic: { name: "Planning (lecture seule)", pin: null, color: "#0891b2", tabs: ["planning"], readOnly: true }
@@ -3123,7 +3127,6 @@ function applyProfile(key) {
 
   if(key==="bureau"){
     autoArchiveOldAbsDemandesSilent();
-    if(!_bureauIdentity){showBureauIdentityModal();}
   }
   // Le wrapper contrôle la visibilité du select + point rouge messages
   var salWrap=document.getElementById("salarie-tab-wrap");
@@ -3248,7 +3251,7 @@ function showProfileModal() {
     btn.onmouseover = function(){ btn.style.borderColor = p.color; };
     btn.onmouseout = function(){ btn.style.borderColor = key===_currentProfile ? p.color : "#e0dbd3"; };
     btn.onclick = function(){
-      if(p.pin){
+      if(p.pin||p.pins){
         // Ask PIN
         var pinBox = document.createElement("div");
         pinBox.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10000;display:flex;align-items:center;justify-content:center";
@@ -3288,11 +3291,23 @@ function showProfileModal() {
           pinOk.disabled=true; pinInp.disabled=true;
           sha256(typed).then(function(hashed){
             pinOk.disabled=false; pinInp.disabled=false;
-            if(hashed===p.pin){
+            var matchedPerson=null;
+            var ok=false;
+            if(p.pins){
+              var found=p.pins.find(function(entry){return entry.pin===hashed;});
+              if(found){ok=true;matchedPerson=found.name;}
+            } else if(hashed===p.pin){
+              ok=true;
+            }
+            if(ok){
               pinSuccess(key);
               pinBox.remove(); modal.remove();
+              if(matchedPerson){
+                _bureauIdentity=matchedPerson;
+                localStorage.setItem("bureau_identity",matchedPerson);
+              }
               applyProfile(key);
-              showToast("👤 Connecté : " + p.name);
+              showToast("👤 Connecté : "+(matchedPerson||p.name));
             } else {
               var a=pinFail(key);
               pinInp.value=""; pinInp.focus();
@@ -3308,7 +3323,16 @@ function showProfileModal() {
           }).catch(function(err){
             // crypto.subtle a échoué — retour à la comparaison directe
             pinOk.disabled=false; pinInp.disabled=false;
-            if(typed===p.pin.replace(/^[a-f0-9]{64}$/,"")||p.pin.length!==64){
+            if(p.pins){
+              var foundPlain=p.pins.find(function(entry){return typed===entry.pin;});
+              if(foundPlain){
+                _bureauIdentity=foundPlain.name;localStorage.setItem("bureau_identity",foundPlain.name);
+                pinSuccess(key);pinBox.remove();modal.remove();applyProfile(key);showToast("👤 Connecté : "+foundPlain.name);
+              } else {
+                var a2=pinFail(key);pinInp.value="";pinInp.focus();pinErr.style.display="block";
+                pinErr.textContent="Code incorrect.";
+              }
+            } else if(typed===p.pin.replace(/^[a-f0-9]{64}$/,"")||p.pin.length!==64){
               // PIN stocké en clair (pas encore hashé)
               if(typed===p.pin){
                 pinSuccess(key);pinBox.remove();modal.remove();applyProfile(key);showToast("👤 Connecté : "+p.name);
@@ -4986,6 +5010,15 @@ function RMESSAGES(){
       return m.to==="all"||m.to===salId||m.from===salId;
     });
   }
+  // Filter: Bureau — un message d'un salarié adressé nommément à une personne (Quentin/Valérie/Vincent)
+  // n'est visible que par cette personne. Sans destinataire précis (générique), visible par tout le Bureau.
+  if(isBureau){
+    msgs=msgs.filter(function(m){
+      if(m.from==="bureau")return true; // messages envoyés par le Bureau : visibles par tous
+      if(!m.toPerson)return true; // pas de destinataire précis : visible par tout le Bureau
+      return m.toPerson===_bureauIdentity;
+    });
+  }
 
   // Sort: newest first
   msgs.sort(function(a,b){return b.ts-a.ts;});
@@ -5154,7 +5187,7 @@ function updateMsgDot(){
   var isBureau=(_currentProfile==="bureau");
   var salId=_salLockedId;
   var hasUnread=D.messages.some(function(m){
-    if(isBureau)return !(m.readBy&&m.readBy.bureau)&&m.from!=="bureau";
+    if(isBureau)return !(m.readBy&&m.readBy.bureau)&&m.from!=="bureau"&&(!m.toPerson||m.toPerson===_bureauIdentity);
     if(salId)return (m.to==="all"||m.to===salId)&&!(m.readBy&&m.readBy[salId])&&m.from!==salId;
     return false;
   });
