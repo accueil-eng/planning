@@ -3712,6 +3712,31 @@ function showWhatsAppModal(targetCW){
 }
 
 // ── RDV ──
+function showRdvNotifBanner(msg){
+  var existing=document.getElementById("rdv-notif-banner");if(existing)existing.remove();
+  var banner=document.createElement("div");banner.id="rdv-notif-banner";
+  banner.style.cssText="position:fixed;bottom:20px;right:20px;z-index:9998;background:#fff;border:1px solid #25d366;border-radius:12px;padding:14px 18px;box-shadow:0 8px 24px rgba(0,0,0,.15);max-width:320px;font-family:DM Sans,sans-serif";
+  banner.innerHTML=
+    "<div style='font-size:12px;font-weight:700;color:#166534;margin-bottom:6px'>🔔 Nouvelle demande de RDV</div>"+
+    "<div style='font-size:11px;color:#7a746c;margin-bottom:10px'>Copiez le message et collez-le dans votre groupe WhatsApp.</div>"+
+    "<div style='display:flex;gap:6px'>"+
+    "<button onclick='copyRdvNotifMsg(this)' style='flex:1;height:30px;background:#25d366;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer'>📋 Copier le message</button>"+
+    "<button onclick=\"document.getElementById('rdv-notif-banner').remove()\" style='height:30px;width:30px;background:#f1f5f9;border:none;border-radius:6px;cursor:pointer;font-size:13px'>✕</button>"+
+    "</div>";
+  document.body.appendChild(banner);
+  banner.dataset.msg=msg;
+  setTimeout(function(){var b=document.getElementById("rdv-notif-banner");if(b)b.remove();},30000);
+}
+function copyRdvNotifMsg(btn){
+  var banner=document.getElementById("rdv-notif-banner");
+  var msg=banner?banner.dataset.msg:"";
+  navigator.clipboard.writeText(msg).then(function(){
+    btn.textContent="✅ Copié !";
+    setTimeout(function(){if(banner)banner.remove();},1200);
+  }).catch(function(){
+    alert(msg);
+  });
+}
 function addRDV(){
   var nom=document.getElementById("rdv-nom").value.trim();
   if(!nom){alert("Le nom est requis.");return;}
@@ -3728,19 +3753,18 @@ function addRDV(){
     appele:false
   });
   save();
-  // Send WhatsApp notification
+  // Notification WhatsApp (copier-coller vers le groupe, WhatsApp ne permet pas l'envoi auto dans un groupe)
   var rdvNom=document.getElementById("rdv-nom").value;
   var rdvDate=document.getElementById("rdv-date").value;
   var rdvTel=document.getElementById("rdv-tel").value;
   var rdvTrav=document.getElementById("rdv-travaux").value;
-  var notifMsg="🔔 Nouvelle demande de RDV%0A"
-    +"👤 "+encodeURIComponent(rdvNom)+"%0A"
-    +(rdvDate?"📅 "+encodeURIComponent(new Date(rdvDate).toLocaleDateString("fr-FR"))+"%0A":"")
-    +(rdvTel?"📱 "+encodeURIComponent(rdvTel)+"%0A":"")
-    +(rdvTrav?"🔧 "+encodeURIComponent(rdvTrav)+"%0A":"")
-    +"%0AVoir : https://accueil-eng.github.io/planning/";
-  var notifUrl="https://wa.me/33627991855?text="+notifMsg;
-  window.open(notifUrl,"_blank");
+  var notifMsgPlain="🔔 Nouvelle demande de RDV\n"
+    +"👤 "+rdvNom+"\n"
+    +(rdvDate?"📅 "+new Date(rdvDate).toLocaleDateString("fr-FR")+"\n":"")
+    +(rdvTel?"📱 "+rdvTel+"\n":"")
+    +(rdvTrav?"🔧 "+rdvTrav+"\n":"")
+    +"\nVoir : https://accueil-eng.github.io/planning/";
+  showRdvNotifBanner(notifMsgPlain);
   ["rdv-date","rdv-nom","rdv-adresse","rdv-tel","rdv-mail","rdv-travaux","rdv-obs"].forEach(function(id){document.getElementById(id).value="";});
   RRDV();
 }
