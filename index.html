@@ -3712,12 +3712,12 @@ function showWhatsAppModal(targetCW){
 }
 
 // ── RDV ──
-function showRdvNotifBanner(msg){
+function showRdvNotifBanner(msg,title){
   var existing=document.getElementById("rdv-notif-banner");if(existing)existing.remove();
   var banner=document.createElement("div");banner.id="rdv-notif-banner";
   banner.style.cssText="position:fixed;bottom:20px;right:20px;z-index:9998;background:#fff;border:1px solid #25d366;border-radius:12px;padding:14px 18px;box-shadow:0 8px 24px rgba(0,0,0,.15);max-width:320px;font-family:DM Sans,sans-serif";
   banner.innerHTML=
-    "<div style='font-size:12px;font-weight:700;color:#166534;margin-bottom:6px'>🔔 Nouvelle demande de RDV</div>"+
+    "<div style='font-size:12px;font-weight:700;color:#166534;margin-bottom:6px'>"+(title||"🔔 Nouvelle demande de RDV")+"</div>"+
     "<div style='font-size:11px;color:#7a746c;margin-bottom:10px'>Copiez le message et collez-le dans votre groupe WhatsApp.</div>"+
     "<div style='display:flex;gap:6px'>"+
     "<button onclick='copyRdvNotifMsg(this)' style='flex:1;height:30px;background:#25d366;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer'>📋 Copier le message</button>"+
@@ -4088,6 +4088,13 @@ function editRDV(id){
     rdv.date=fDate.value;rdv.nom=fNom.value.trim();rdv.adresse=fAdr.value.trim();
     rdv.tel=fTel.value.trim();rdv.mail=fMail.value.trim();rdv.travaux=fTrav.value.trim();rdv.obs=fObs.value.trim();
     save();modal.remove();RRDV();
+    var notifMsgEdit="✏️ Demande de RDV modifiée\n"
+      +"👤 "+rdv.nom+"\n"
+      +(rdv.date?"📅 "+new Date(rdv.date).toLocaleDateString("fr-FR")+"\n":"")
+      +(rdv.tel?"📱 "+rdv.tel+"\n":"")
+      +(rdv.travaux?"🔧 "+rdv.travaux+"\n":"")
+      +"\nVoir : https://accueil-eng.github.io/planning/";
+    showRdvNotifBanner(notifMsgEdit,"✏️ Demande de RDV modifiée");
   };
   var cancelBtn=document.createElement("button");cancelBtn.style.cssText="height:36px;padding:0 14px;background:none;border:1px solid #c5bfb5;border-radius:8px;font-size:13px;cursor:pointer";cancelBtn.textContent="Annuler";
   cancelBtn.onclick=function(){modal.remove();};
