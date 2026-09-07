@@ -3565,12 +3565,9 @@ function showPinHashTool(){
     });
     return;
   }
-  var saved = localStorage.getItem("current_profile");
-  if(saved && PROFILES[saved]){
-    applyProfile(saved);
-  } else {
-    setTimeout(showProfileModal, 300);
-  }
+  // Toujours démarrer sur l'écran de choix du profil — pas de restauration automatique
+  // de la session précédente, pour que le lien en favori redemande systématiquement qui se connecte.
+  setTimeout(showProfileModal, 300);
 })();
 
 // ── ONEDRIVE SYNC ──
