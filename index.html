@@ -239,6 +239,7 @@ body.profile-salarie .tabs{display:none}
 <div id="absdemandes-banner" onclick="TAB('absences')" style="display:none;cursor:pointer;background:#fffbeb;border-bottom:1px solid #fde68a;color:#92400e;font-size:13px;font-weight:600;padding:10px 16px;text-align:center"></div>
 <div id="ptvalidations-banner" onclick="TAB('pointage')" style="display:none;cursor:pointer;background:#f0fdf4;border-bottom:2px solid #86efac;color:#166534;font-size:13px;font-weight:600;padding:10px 16px;text-align:center"></div>
 <div id="ptmodifications-banner" onclick="TAB('pointage')" style="display:none;cursor:pointer;background:#fff1f2;border-bottom:2px solid #fca5a5;color:#dc2626;font-size:13px;font-weight:600;padding:10px 16px;text-align:center"></div>
+<div id="rdv-unread-banner" onclick="TAB('rdv')" style="display:none;cursor:pointer;background:#eff6ff;border-bottom:2px solid #93c5fd;color:#1e40af;font-size:13px;font-weight:600;padding:10px 16px;text-align:center"></div>
 
 <div class="pg on" id="pg-planning">
   <div class="ptool">
@@ -1299,7 +1300,7 @@ function TAB(n){
     } else {
       loadFromCloud(function(){
         RPOINTAGE(); // Re-rendu avec données fraîches de GitHub
-        if(_currentProfile==="bureau"){renderPtValidationsList();renderPtModificationsList();}
+        if(_currentProfile==="bureau"){renderPtValidationsList();renderPtModificationsList();renderRdvUnreadBanner();}
       });
     }
   }
@@ -3168,6 +3169,7 @@ function showModeChooser(ent){
       if(m.id==="bureau"){
         applyProfile("bureau");
         showToast("👤 Connecté : "+ent.displayName+" (Bureau)");
+        setTimeout(renderRdvUnreadBanner,150);
       } else if(m.id==="analyse"){
         applyProfile("analyse");
         showToast("👤 Connecté : "+ent.displayName+" (Analyse)");
@@ -3876,7 +3878,8 @@ function addRDV(){
     mail:document.getElementById("rdv-mail").value.trim(),
     travaux:document.getElementById("rdv-travaux").value.trim(),
     obs:document.getElementById("rdv-obs").value.trim(),
-    appele:false
+    appele:false,
+    readBy:{}
   });
   save();
   // Notification WhatsApp (copier-coller vers le groupe, WhatsApp ne permet pas l'envoi auto dans un groupe)
@@ -4129,6 +4132,7 @@ function decideAbsDemande(id,status){
 
 function RRDV(){
   var el=document.getElementById("rdvlist");if(!el)return;
+  renderRdvUnreadBanner();
   if(!D.rdvs||!D.rdvs.length){
     el.innerHTML="<div class='empty'><div class='empty-icon'>📅</div><p>Aucune demande de RDV.</p></div>";return;
   }
@@ -4136,7 +4140,7 @@ function RRDV(){
   var table=document.createElement("table");
   table.style.cssText="width:100%;border-collapse:collapse;font-size:12px";
   var thead=table.createTHead();var hr=thead.insertRow();
-  ["Date","Nom","Adresse","Téléphone","Email","Travaux","Observations","✅ Appelé","",""].forEach(function(h){
+  ["Date","Nom","Adresse","Téléphone","Email","Travaux","Observations","✅ Appelé","👁️ Lu","",""].forEach(function(h){
     var th=document.createElement("th");th.textContent=h;
     th.style.cssText="padding:8px 10px;text-align:left;background:#e2e8f0;border:1px solid var(--brd);font-size:11px;font-weight:600;white-space:nowrap";
     hr.appendChild(th);
@@ -4145,8 +4149,10 @@ function RRDV(){
   // Sort by date
   var sorted=D.rdvs.slice().sort(function(a,b){return(a.date||"").localeCompare(b.date||"");});
   sorted.forEach(function(rdv){
+    if(!rdv.readBy)rdv.readBy={};
+    var isUnread=_currentProfile==="bureau"&&_bureauIdentity&&!rdv.readBy[_bureauIdentity];
     var tr=tbody.insertRow();
-    tr.style.cssText="border-bottom:1px solid var(--brd)"+(rdv.appele?";opacity:.6;background:#f0fdf4":"");
+    tr.style.cssText="border-bottom:1px solid var(--brd)"+(rdv.appele?";opacity:.6;background:#f0fdf4":"")+(isUnread?";background:#eff6ff":"");
     var cells=[
       rdv.date?new Date(rdv.date).toLocaleDateString("fr-FR"):"—",
       rdv.nom,
@@ -4170,6 +4176,21 @@ function RRDV(){
       if(r){r.appele=this.checked;}save();RRDV();
     };})(rdv.id);
     tdCb.appendChild(cb);
+    // Lu checkbox (par personne connectée)
+    var tdLu=tr.insertCell();tdLu.style.cssText="padding:8px 10px;border:1px solid var(--brd);text-align:center";
+    if(_currentProfile==="bureau"&&_bureauIdentity){
+      var cbLu=document.createElement("input");cbLu.type="checkbox";cbLu.checked=!!rdv.readBy[_bureauIdentity];
+      cbLu.title=cbLu.checked?"Lu par "+_bureauIdentity:"Marquer comme lu";
+      cbLu.style.cssText="width:16px;height:16px;cursor:pointer;accent-color:#2563eb";
+      cbLu.onchange=(function(rid){return function(){
+        var r=D.rdvs.find(function(x){return x.id===rid;});
+        if(r){if(!r.readBy)r.readBy={};r.readBy[_bureauIdentity]=this.checked;}
+        save();RRDV();
+      };})(rdv.id);
+      tdLu.appendChild(cbLu);
+    } else {
+      tdLu.textContent="—";
+    }
     // Edit
     var tdEdit=tr.insertCell();tdEdit.style.cssText="padding:8px 10px;border:1px solid var(--brd);text-align:center";
     var eb=document.createElement("button");eb.className="btn";eb.style.cssText="font-size:11px;padding:2px 8px";eb.textContent="✏️";
@@ -4182,6 +4203,22 @@ function RRDV(){
     tdDel.appendChild(xb);
   });
   el.appendChild(table);
+}
+
+// Bannière visible en haut de l'app quand il y a des demandes de RDV pas encore lues
+// par la personne actuellement connectée (Quentin, Vincent ou Valérie).
+function renderRdvUnreadBanner(){
+  var banner=document.getElementById("rdv-unread-banner");
+  if(!banner)return;
+  if(_currentProfile!=="bureau"||!_bureauIdentity||!D.rdvs){banner.style.display="none";return;}
+  var unread=D.rdvs.filter(function(r){return !(r.readBy&&r.readBy[_bureauIdentity]);});
+  if(unread.length){
+    var names=unread.map(function(r){return r.nom;}).join(", ");
+    banner.textContent="🔔 "+unread.length+" nouvelle(s) demande(s) de RDV non lue(s) : "+names+" — Cliquer pour voir";
+    banner.style.display="block";
+  } else {
+    banner.style.display="none";
+  }
 }
 
 function editRDV(id){
@@ -6885,7 +6922,7 @@ function RPOINTAGE(){
       if(wrap2b)wrap2b.innerHTML="<div style='background:#fee2e2;border:1px solid #fca5a5;border-radius:10px;padding:12px 16px;text-align:center;font-size:13px;font-weight:600;color:#991b1b'>🔒 Pointage verrouillé par le Bureau — aucune modification possible</div>";
     }
   } else {
-    renderPtValidationsList();renderPtModificationsList();
+    renderPtValidationsList();renderPtModificationsList();renderRdvUnreadBanner();
     updateLockBtn(mois,annee,filterId);
     // Lock entire month if locked
     if(isPointageLocked(filterId,mois,annee)){
