@@ -4997,8 +4997,8 @@ function renderChargeHebdo(weeks,chantiers,periodEnd){
   if(!wrap)return;
   // Un chantier est pris en compte dès qu'il a un effectif prévu ET une date de début prévisionnelle.
   // S'il n'a pas de date de fin renseignée, on le considère actif jusqu'à la fin de la période affichée.
-  var withEffectif=chantiers.filter(function(c){return c.effectifPrevu&&c.dateDebutPrev;}).map(function(c){
-    return {ch:c,chS:new Date(c.dateDebutPrev),chE:c.dateFinPrev?new Date(c.dateFinPrev):periodEnd};
+  var withEffectif=chantiers.filter(function(c){return c.effectifPrevu&&(c.dateDebutPrev||c.dateDebut);}).map(function(c){
+    return {ch:c,chS:new Date(c.dateDebutPrev||c.dateDebut),chE:c.dateFinPrev?new Date(c.dateFinPrev):periodEnd};
   });
   var dispo=D.salaries.filter(function(s){return !s.isBureau;}).length||15;
 
@@ -5053,8 +5053,8 @@ function renderChargeMensuelle(startDate,endDate,chantiers){
   var last=new Date(endDate.getFullYear(),endDate.getMonth(),1);
   while(cur<=last){months.push(new Date(cur));cur=new Date(cur.getFullYear(),cur.getMonth()+1,1);}
 
-  var withEffectif=chantiers.filter(function(c){return c.effectifPrevu&&c.dateDebutPrev;}).map(function(c){
-    return {ch:c,chS:new Date(c.dateDebutPrev),chE:c.dateFinPrev?new Date(c.dateFinPrev):endDate};
+  var withEffectif=chantiers.filter(function(c){return c.effectifPrevu&&(c.dateDebutPrev||c.dateDebut);}).map(function(c){
+    return {ch:c,chS:new Date(c.dateDebutPrev||c.dateDebut),chE:c.dateFinPrev?new Date(c.dateFinPrev):endDate};
   });
 
   if(!months.length){wrap.innerHTML="";return;}
@@ -5094,7 +5094,10 @@ function renderChargeMensuelle(startDate,endDate,chantiers){
 
   withEffectif.forEach(function(item){
     var ch=item.ch;
-    h+="<tr><td style='padding:5px 10px;background:#fff;position:sticky;left:0;border:1px solid #e2e8f0'><span style='display:inline-block;width:8px;height:8px;border-radius:50%;background:"+ch.color+";margin-right:5px'></span>"+(ch.ref?ch.ref+" - ":"")+ch.nom+(!ch.dateFinPrev?" <span style='color:#94a3b8;font-weight:400'>(sans fin connue)</span>":"")+"</td>";
+    var noteBits=[];
+    if(!ch.dateDebutPrev)noteBits.push("début réel utilisé");
+    if(!ch.dateFinPrev)noteBits.push("sans fin connue");
+    h+="<tr><td style='padding:5px 10px;background:#fff;position:sticky;left:0;border:1px solid #e2e8f0'><span style='display:inline-block;width:8px;height:8px;border-radius:50%;background:"+ch.color+";margin-right:5px'></span>"+(ch.ref?ch.ref+" - ":"")+ch.nom+(noteBits.length?" <span style='color:#94a3b8;font-weight:400'>("+noteBits.join(", ")+")</span>":"")+"</td>";
     byMonth.forEach(function(b){
       var moStart=b.mo, moEnd=new Date(b.mo.getFullYear(),b.mo.getMonth()+1,0);
       var active=item.chS<=moEnd&&item.chE>=moStart;
