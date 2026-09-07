@@ -5024,11 +5024,7 @@ function renderChargeHebdo(weeks,chantiers,periodEnd){
   var GAP=4;
   var h="<h3 style='font-family:Syne,sans-serif;font-weight:800;font-size:14px;margin:0 0 4px;color:#1a1916'>📊 Charge prévisionnelle — capacité : "+dispo+" salariés</h3>";
   h+="<p style='font-size:11px;color:#7a746c;margin:0 0 12px'>Besoin en personnel par semaine, comparé à l'effectif disponible.</p>";
-  h+="<div style='position:relative;width:max-content'>";
-  if(curWeekIdx>=0){
-    var lineLeft=curWeekIdx*(BAR_W+GAP)+BAR_W/2;
-    h+="<div title='Aujourd&#39;hui' style='position:absolute;top:0;height:"+(BAR_H+30)+"px;left:"+lineLeft+"px;width:2px;background:#dc2626;z-index:5;pointer-events:none'></div>";
-  }
+  h+="<div style='width:max-content'>";
   h+="<div style='display:flex;align-items:flex-end;gap:"+GAP+"px;height:"+(BAR_H+50)+"px;border-bottom:2px dashed #94a3b8;padding-bottom:4px'>";
   byWeek.forEach(function(b,i){
     var isOver=b.besoin>dispo;
@@ -5037,11 +5033,11 @@ function renderChargeHebdo(weeks,chantiers,periodEnd){
     var label=isOver?("▲ +"+(b.besoin-dispo)):(b.besoin?("✓ "+dispo):"");
     var subLabel=isOver?"":(b.besoin?"-dispo-":"");
     var isCurWeek=(i===curWeekIdx);
-    h+="<div style='display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:"+BAR_W+"px;flex-shrink:0'>";
+    h+="<div style='display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:"+BAR_W+"px;flex-shrink:0;box-sizing:border-box"+(isCurWeek?";border-left:3px solid #dc2626;border-right:3px solid #dc2626;background:rgba(220,38,38,.06)":"")+"'>";
     h+="<div style='font-size:10px;color:"+(isOver?"#dc2626":"#166534")+";font-weight:700;white-space:nowrap;margin-bottom:2px'>"+label+"</div>";
     if(subLabel)h+="<div style='font-size:8px;color:#94a3b8;margin-bottom:2px'>"+subLabel+"</div>";
     h+="<div title='S"+getISOWeek(b.w)+" — besoin: "+b.besoin+" / dispo: "+dispo+"' style='width:100%;height:"+barH+"px;background:"+(isOver?"#ef4444":(b.besoin?"#22c55e":"#e2e8f0"))+";border-radius:4px 4px 0 0'></div>";
-    h+="<div style='font-size:8px;color:"+(isCurWeek?"#dc2626":"#94a3b8")+";font-weight:"+(isCurWeek?"700":"400")+";margin-top:3px'>S"+getISOWeek(b.w)+"</div>";
+    h+="<div style='font-size:8px;color:"+(isCurWeek?"#dc2626":"#94a3b8")+";font-weight:"+(isCurWeek?"700":"400")+";margin-top:3px'>S"+getISOWeek(b.w)+(isCurWeek?" •":"")+"</div>";
     h+="</div>";
   });
   h+="</div></div>";
