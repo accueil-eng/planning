@@ -845,6 +845,8 @@ function loadMyPrivateData(cb){
       D.pointages=Object.assign({},D.pointages||{},mine.pointages||{});
       D.rttReport=Object.assign({},D.rttReport||{},mine.rttReport||{});
       D.rttManual=Object.assign({},D.rttManual||{},mine.rttManual||{});
+      D.ptWeekValidations=Object.assign({},D.ptWeekValidations||{},mine.ptWeekValidations||{});
+      D.ptModifications=Object.assign({},D.ptModifications||{},mine.ptModifications||{});
     } else if(mine&&mine.error){
       console.log("Worker /me error:",mine.error);
     }
@@ -856,6 +858,14 @@ function loadMyPrivateData(cb){
 // soient fusionnés dans les vraies données privées (aucun token exposé au navigateur).
 function syncMyPrivateData(){
   if(!_salLockedId)return;
+  var myPtWeekValidations={};
+  Object.keys(D.ptWeekValidations||{}).forEach(function(k){
+    if(D.ptWeekValidations[k]&&D.ptWeekValidations[k].salId===_salLockedId)myPtWeekValidations[k]=D.ptWeekValidations[k];
+  });
+  var myPtModifications={};
+  Object.keys(D.ptModifications||{}).forEach(function(k){
+    if(D.ptModifications[k]&&D.ptModifications[k].salId===_salLockedId)myPtModifications[k]=D.ptModifications[k];
+  });
   fetch(WORKER_API+"/sync",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
@@ -863,7 +873,9 @@ function syncMyPrivateData(){
       salId:_salLockedId,
       pointages:D.pointages||{},
       absDemandes:(D.absDemandes||[]).filter(function(a){return a.salId===_salLockedId;}),
-      messages:(D.messages||[]).filter(function(m){return m.from===_salLockedId;})
+      messages:(D.messages||[]).filter(function(m){return m.from===_salLockedId;}),
+      ptWeekValidations:myPtWeekValidations,
+      ptModifications:myPtModifications
     })
   })
   .then(function(r){return r.json();})
