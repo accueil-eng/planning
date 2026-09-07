@@ -5027,7 +5027,7 @@ function renderChargeHebdo(weeks,chantiers,periodEnd){
   h+="<div style='position:relative;width:max-content'>";
   if(curWeekIdx>=0){
     var lineLeft=curWeekIdx*(BAR_W+GAP)+BAR_W/2;
-    h+="<div title='Aujourd\\'hui' style='position:absolute;top:0;height:"+(BAR_H+30)+"px;left:"+lineLeft+"px;width:2px;background:#dc2626;z-index:5;pointer-events:none'></div>";
+    h+="<div title='Aujourd&#39;hui' style='position:absolute;top:0;height:"+(BAR_H+30)+"px;left:"+lineLeft+"px;width:2px;background:#dc2626;z-index:5;pointer-events:none'></div>";
   }
   h+="<div style='display:flex;align-items:flex-end;gap:"+GAP+"px;height:"+(BAR_H+50)+"px;border-bottom:2px dashed #94a3b8;padding-bottom:4px'>";
   byWeek.forEach(function(b,i){
