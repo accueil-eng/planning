@@ -4140,7 +4140,7 @@ function RRDV(){
   var table=document.createElement("table");
   table.style.cssText="width:100%;border-collapse:collapse;font-size:12px";
   var thead=table.createTHead();var hr=thead.insertRow();
-  ["Date","Nom","Adresse","Téléphone","Email","Travaux","Observations","✅ Appelé","👁️ Lu","",""].forEach(function(h){
+  ["Date","Nom","Adresse","Téléphone","Email","Travaux","Observations","✅ Appelé","👁️ Lu (Quentin)","",""].forEach(function(h){
     var th=document.createElement("th");th.textContent=h;
     th.style.cssText="padding:8px 10px;text-align:left;background:#e2e8f0;border:1px solid var(--brd);font-size:11px;font-weight:600;white-space:nowrap";
     hr.appendChild(th);
@@ -4176,18 +4176,21 @@ function RRDV(){
       if(r){r.appele=this.checked;}save();RRDV();
     };})(rdv.id);
     tdCb.appendChild(cb);
-    // Lu checkbox (par personne connectée)
+    // Lu par Quentin — coché uniquement par Quentin, visible (lecture seule) par les autres
     var tdLu=tr.insertCell();tdLu.style.cssText="padding:8px 10px;border:1px solid var(--brd);text-align:center";
-    if(_currentProfile==="bureau"&&_bureauIdentity){
-      var cbLu=document.createElement("input");cbLu.type="checkbox";cbLu.checked=!!rdv.readBy[_bureauIdentity];
-      cbLu.title=cbLu.checked?"Lu par "+_bureauIdentity:"Marquer comme lu";
+    if(_currentProfile==="bureau"&&_bureauIdentity==="Quentin"){
+      var cbLu=document.createElement("input");cbLu.type="checkbox";cbLu.checked=!!rdv.readBy.Quentin;
+      cbLu.title=cbLu.checked?"Lu par Quentin":"Marquer comme lu";
       cbLu.style.cssText="width:16px;height:16px;cursor:pointer;accent-color:#2563eb";
       cbLu.onchange=(function(rid){return function(){
         var r=D.rdvs.find(function(x){return x.id===rid;});
-        if(r){if(!r.readBy)r.readBy={};r.readBy[_bureauIdentity]=this.checked;}
+        if(r){if(!r.readBy)r.readBy={};r.readBy.Quentin=this.checked;}
         save();RRDV();
       };})(rdv.id);
       tdLu.appendChild(cbLu);
+    } else if(_currentProfile==="bureau"){
+      tdLu.textContent=rdv.readBy.Quentin?"✅":"⬜";
+      tdLu.title=rdv.readBy.Quentin?"Lu par Quentin":"Pas encore lu par Quentin";
     } else {
       tdLu.textContent="—";
     }
