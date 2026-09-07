@@ -4855,7 +4855,7 @@ function RGANTT(){
     return;
   }
 
-  var LW=180,DW=160,WW=28;
+  var LW=180,DW=160,WW=28,EW=70;
   var wrap=document.createElement("div");wrap.style.cssText="overflow-x:auto;overflow-y:auto;max-height:75vh";
   var tbl=document.createElement("table");
   tbl.style.cssText="border-collapse:collapse;font-size:11px";
@@ -4870,6 +4870,7 @@ function RGANTT(){
     return th;
   }
   tr0.appendChild(mkTH("Chantier","#1a1916","#fff",LW,true));
+  tr0.appendChild(mkTH("👥 Prévu","#1a1916","#fff",EW));
   tr0.appendChild(mkTH("Periode","#1a1916","#fff",DW));
 
   // Group weeks by month
@@ -4888,6 +4889,7 @@ function RGANTT(){
   // Row 2: week numbers
   var tr1=document.createElement("tr");
   tr1.appendChild(mkTH("","#e2e8f0","",LW,true));
+  tr1.appendChild(mkTH("","#e2e8f0","",EW));
   tr1.appendChild(mkTH("","#e2e8f0","",DW));
   weeks.forEach(function(w){
     var wk=getISOWeek(w);
@@ -4913,6 +4915,21 @@ function RGANTT(){
     tdN.appendChild(document.createTextNode((ch.ref?ch.ref+" - ":"")+ch.nom+(ch.ville?" ("+ch.ville+")":"")));
     tr.appendChild(tdN);
 
+    // Effectif prévu cell
+    var tdEffCol=document.createElement("td");
+    tdEffCol.style.cssText="border:1px solid #e2e8f0;padding:4px 6px;text-align:center;background:"+bg+";min-width:"+EW+"px";
+    var effInp=document.createElement("input");
+    effInp.type="number";effInp.min="0";effInp.step="1";effInp.placeholder="—";
+    effInp.value=ch.effectifPrevu||"";
+    effInp.style.cssText="width:44px;height:26px;border:1px solid #86efac;border-radius:5px;text-align:center;font-size:12px;outline:none;color:#166534;font-weight:600";
+    effInp.onchange=(function(cid){return function(){
+      var c=D.chantiers.find(function(x){return x.id===cid;});
+      if(c)c.effectifPrevu=this.value?parseInt(this.value):null;
+      save();
+    };})(ch.id);
+    tdEffCol.appendChild(effInp);
+    tr.appendChild(tdEffCol);
+
     // Dates cell
     var tdD=document.createElement("td");
     tdD.style.cssText="border:1px solid #e2e8f0;padding:4px 8px;font-size:10px;min-width:"+DW+"px";
@@ -4927,9 +4944,6 @@ function RGANTT(){
       hh+="<div style='color:"+ch.color+";font-weight:600'>&#9632; D&#233;but r&#233;el: "+fmt2(ch.dateDebut)+"</div>";
     }
     if(!hh)hh="<span style='color:#94a3b8;font-style:italic;font-size:10px'>Cliquer &#9998; pour saisir</span>";
-    if(ch.effectifPrevu){
-      hh+="<div style='color:#16a34a;font-weight:600;margin-top:2px'>&#128101; "+ch.effectifPrevu+" pr&#233;vu"+(ch.effectifPrevu>1?"s":"")+"</div>";
-    }
     tdD.innerHTML=hh;
     // Edit button
     var eb3=document.createElement("button");eb3.className="btn";eb3.style.cssText="font-size:10px;padding:1px 5px;margin-top:3px;display:block";eb3.textContent="✏️";
