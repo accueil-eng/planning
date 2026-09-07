@@ -3085,7 +3085,7 @@ var PROFILES = {
   bureau: { name: "Bureau", pins: [
       {name:"Quentin", pin:"03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4", excludeTabs:["salaries"]},
       {name:"Vincent", pin:"db2e7f1bd5ab9968ae76199b7cc74795ca7404d5a08d78567715ce532f9d2669", excludeTabs:["salaries"]},
-      {name:"Valérie", pin:"e8151b2c92fd188cec72b573a289fefc9d06d3116ba4eb2c8a8719ebf15c1270"}
+      {name:"Valérie", pin:"e8151b2c92fd188cec72b573a289fefc9d06d3116ba4eb2c8a8719ebf15c1270", selfSalId:"sal_1781699849993"}
     ], color: "#db2777", tabs: ["planning","rdv","chantiers","salaries","absences","vehicules","formation","pointage","indemnites","urgences","messages"], readOnly: false },
   analyse: { name: "Analyse", pin: "e8151b2c92fd188cec72b573a289fefc9d06d3116ba4eb2c8a8719ebf15c1270", color: "#0891b2", tabs: ["gantt","bilan","rttrecap"], readOnly: false },
   salarie: { name: "Salarié", pin: null, color: "#16a34a", tabs: ["planning","absdemande","pointage","monrtt","urgences","messages"], readOnly: true },
@@ -3117,6 +3117,74 @@ function showBureauIdentityModal(){
   });
   box.appendChild(btnRow);
   modal.appendChild(box);document.body.appendChild(modal);
+}
+
+// Après identification d'une personne (PIN validé), propose le mode d'accès : Bureau, Analyse,
+// et pour Valérie uniquement, son propre espace salarié.
+function showModeChooser(ent){
+  var existing=document.getElementById("mode-chooser-modal");if(existing)existing.remove();
+  var modal=document.createElement("div");modal.id="mode-chooser-modal";
+  modal.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center";
+  var box=document.createElement("div");
+  box.style.cssText="background:#fff;border-radius:14px;padding:28px;max-width:340px;width:92%;box-shadow:0 16px 48px rgba(0,0,0,.2);font-family:DM Sans,sans-serif";
+  var title=document.createElement("div");
+  title.style.cssText="font-family:Syne,sans-serif;font-weight:800;font-size:17px;margin-bottom:4px;color:#1a1916";
+  title.textContent="Bonjour "+ent.displayName+" 👋";
+  box.appendChild(title);
+  var sub=document.createElement("p");
+  sub.style.cssText="font-size:12px;color:#7a746c;margin-bottom:18px";
+  sub.textContent="Quel espace voulez-vous ouvrir ?";
+  box.appendChild(sub);
+
+  var modes=[
+    {id:"bureau",icon:"🏢",label:"Bureau",desc:"Accès complet · Tout modifiable",color:"#db2777"},
+    {id:"analyse",icon:"📊",label:"Analyse",desc:"Prévisionnel · Bilans",color:"#0891b2"},
+  ];
+  if(ent.selfSalId)modes.push({id:"salarie-self",icon:"👷",label:"Mon espace salarié",desc:"Mon planning · Pointage · Absences",color:"#16a34a"});
+
+  modes.forEach(function(m){
+    var btn=document.createElement("div");
+    btn.style.cssText="display:flex;align-items:center;gap:12px;padding:14px 16px;border:2px solid #e0dbd3;border-radius:10px;cursor:pointer;margin-bottom:10px;transition:border-color .15s";
+    btn.onmouseover=function(){btn.style.borderColor=m.color;};
+    btn.onmouseout=function(){btn.style.borderColor="#e0dbd3";};
+    btn.onclick=function(){
+      modal.remove();
+      if(m.id==="bureau"){
+        applyProfile("bureau");
+        showToast("👤 Connecté : "+ent.displayName+" (Bureau)");
+      } else if(m.id==="analyse"){
+        applyProfile("analyse");
+        showToast("👤 Connecté : "+ent.displayName+" (Analyse)");
+      } else if(m.id==="salarie-self"){
+        _salLockedId=ent.selfSalId;
+        loadPublicPlanning(function(){
+          loadMyPrivateData(function(){
+            applyProfile("salarie");
+            showToast("👤 Connecté : "+ent.displayName+" (Mon espace)");
+          });
+        });
+      }
+    };
+    var av=document.createElement("div");
+    av.style.cssText="width:40px;height:40px;border-radius:50%;background:"+m.color+";display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0";
+    av.textContent=m.icon;
+    btn.appendChild(av);
+    var info=document.createElement("div");
+    var nm=document.createElement("div");nm.style.cssText="font-weight:600;font-size:15px;color:#1a1916";nm.textContent=m.label;info.appendChild(nm);
+    var ds=document.createElement("div");ds.style.cssText="font-size:11px;color:#7a746c;margin-top:2px";ds.textContent=m.desc;info.appendChild(ds);
+    btn.appendChild(info);
+    var arr=document.createElement("div");arr.style.cssText="margin-left:auto;color:#c5bfb5;font-size:18px";arr.textContent="→";btn.appendChild(arr);
+    box.appendChild(btn);
+  });
+
+  var backBtn=document.createElement("button");
+  backBtn.textContent="← Changer de personne";
+  backBtn.style.cssText="width:100%;height:34px;background:none;border:1px solid #c5bfb5;border-radius:8px;font-size:12px;cursor:pointer;margin-top:4px";
+  backBtn.onclick=function(){modal.remove();showProfileModal();};
+  box.appendChild(backBtn);
+
+  modal.appendChild(box);document.body.appendChild(modal);
+  modal.onclick=function(e){if(e.target===modal)modal.remove();};
 }
 
 // Renvoie les onglets accessibles pour le profil (et la personne, côté Bureau) actuellement connecté(e)
@@ -3257,17 +3325,9 @@ function showProfileModal() {
   box.appendChild(sub);
 
   var entries=[];
-  Object.keys(PROFILES).forEach(function(key){
-    if(key==="planningpublic")return; // accessible uniquement via le lien dédié, pas au choix manuel
-    var p=PROFILES[key];
-    if(p.pins){
-      // Un bouton par personne, chacun avec son propre code PIN
-      p.pins.forEach(function(entry){
-        entries.push({key:key,p:p,displayName:entry.name,personPin:entry.pin,subtitle:"Accès complet · Tout modifiable"});
-      });
-    } else {
-      entries.push({key:key,p:p,displayName:p.name,personPin:null,subtitle:key==="salarie"?"Planning · Pointage · Absences":key==="analyse"?"Prévisionnel · Bilans":""});
-    }
+  var bp=PROFILES.bureau;
+  bp.pins.forEach(function(entry){
+    entries.push({key:"bureau",p:bp,displayName:entry.name,personPin:entry.pin,subtitle:"Se connecter"});
   });
 
   entries.forEach(function(ent){
@@ -3332,8 +3392,7 @@ function showProfileModal() {
                 _bureauIdentity=matchedPerson;
                 localStorage.setItem("bureau_identity",matchedPerson);
               }
-              applyProfile(key);
-              showToast("👤 Connecté : "+(matchedPerson||p.name));
+              showModeChooser(ent);
             } else {
               var a=pinFail(key);
               pinInp.value=""; pinInp.focus();
@@ -3352,7 +3411,7 @@ function showProfileModal() {
             if(ent.personPin){
               if(typed===ent.personPin){
                 _bureauIdentity=ent.displayName;localStorage.setItem("bureau_identity",ent.displayName);
-                pinSuccess(key);pinBox.remove();modal.remove();applyProfile(key);showToast("👤 Connecté : "+ent.displayName);
+                pinSuccess(key);pinBox.remove();modal.remove();showModeChooser(ent);
               } else {
                 var a2=pinFail(key);pinInp.value="";pinInp.focus();pinErr.style.display="block";
                 pinErr.textContent="Code incorrect.";
