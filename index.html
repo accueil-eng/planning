@@ -4780,12 +4780,15 @@ function editGanttDates(id){
   var fFP=mkRow("Fin prévisionnelle",Object.assign(document.createElement("input"),{type:"date",value:ch.dateFinPrev||"",style:"flex:1;height:32px;border:1px solid #c4b5fd;border-radius:6px;padding:0 8px;font-size:12px;outline:none"}));
   var sep2=document.createElement("div");sep2.style.cssText="font-size:11px;font-weight:700;color:#0891b2;margin-bottom:8px;margin-top:4px;padding:4px 8px;background:#e0f2fe;border-radius:5px";sep2.textContent="Début réel (renseigné quand le chantier commence)";box.appendChild(sep2);
   var fDR=mkRow("Début réel",Object.assign(document.createElement("input"),{type:"date",value:ch.dateDebut||"",style:"flex:1;height:32px;border:1px solid #7dd3fc;border-radius:6px;padding:0 8px;font-size:12px;outline:none"}));
+  var sep3=document.createElement("div");sep3.style.cssText="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:8px;margin-top:4px;padding:4px 8px;background:#f0fdf4;border-radius:5px";sep3.textContent="Charge prévisionnelle";box.appendChild(sep3);
+  var fEff=mkRow("👥 Salariés prévus",Object.assign(document.createElement("input"),{type:"number",min:"0",step:"1",value:ch.effectifPrevu||"",placeholder:"ex: 4",style:"flex:1;height:32px;border:1px solid #86efac;border-radius:6px;padding:0 8px;font-size:12px;outline:none"}));
   var btnRow=document.createElement("div");btnRow.style.cssText="display:flex;gap:8px;margin-top:10px";
   var okBtn=document.createElement("button");okBtn.style.cssText="flex:1;height:36px;background:#1a1916;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer";okBtn.textContent="Enregistrer";
   okBtn.onclick=function(){
     ch.dateDebutPrev=fDP.value;
     ch.dateFinPrev=fFP.value;
     ch.dateDebut=fDR.value;
+    ch.effectifPrevu=fEff.value?parseInt(fEff.value):null;
     // If real start date filled, update dateDebutPrev too if empty
     if(fDR.value&&!ch.dateDebutPrev)ch.dateDebutPrev=fDR.value;
     save();modal.remove();RGANTT();
@@ -4924,6 +4927,9 @@ function RGANTT(){
       hh+="<div style='color:"+ch.color+";font-weight:600'>&#9632; D&#233;but r&#233;el: "+fmt2(ch.dateDebut)+"</div>";
     }
     if(!hh)hh="<span style='color:#94a3b8;font-style:italic;font-size:10px'>Cliquer &#9998; pour saisir</span>";
+    if(ch.effectifPrevu){
+      hh+="<div style='color:#16a34a;font-weight:600;margin-top:2px'>&#128101; "+ch.effectifPrevu+" pr&#233;vu"+(ch.effectifPrevu>1?"s":"")+"</div>";
+    }
     tdD.innerHTML=hh;
     // Edit button
     var eb3=document.createElement("button");eb3.className="btn";eb3.style.cssText="font-size:10px;padding:1px 5px;margin-top:3px;display:block";eb3.textContent="✏️";
