@@ -4210,7 +4210,7 @@ function RRDV(){
 function renderRdvUnreadBanner(){
   var banner=document.getElementById("rdv-unread-banner");
   if(!banner)return;
-  if(_currentProfile!=="bureau"||!_bureauIdentity||!D.rdvs){banner.style.display="none";return;}
+  if(_currentProfile!=="bureau"||_bureauIdentity!=="Quentin"||!D.rdvs){banner.style.display="none";return;}
   var unread=D.rdvs.filter(function(r){return !(r.readBy&&r.readBy[_bureauIdentity]);});
   if(unread.length){
     var names=unread.map(function(r){return r.nom;}).join(", ");
