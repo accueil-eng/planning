@@ -3327,7 +3327,7 @@ function showProfileModal() {
   var entries=[];
   var bp=PROFILES.bureau;
   bp.pins.forEach(function(entry){
-    entries.push({key:"bureau",p:bp,displayName:entry.name,personPin:entry.pin,subtitle:"Se connecter"});
+    entries.push({key:"bureau",p:bp,displayName:entry.name,personPin:entry.pin,subtitle:"Se connecter",selfSalId:entry.selfSalId});
   });
 
   entries.forEach(function(ent){
