@@ -398,6 +398,7 @@ body.profile-salarie .tabs{display:none}
   </div>
   <div id="gantt-legend" style="display:flex;gap:16px;margin-bottom:8px;font-size:11px;color:#475569;align-items:center;flex-wrap:wrap"></div>
   <div id="gantt-wrap" style="overflow-x:auto"></div>
+  <div id="gantt-charge-weekly-wrap" style="margin-top:22px;overflow-x:auto"></div>
   <div id="gantt-charge-wrap" style="margin-top:22px;overflow-x:auto"></div>
 </div>
 
@@ -4986,7 +4987,52 @@ function RGANTT(){
   });
   tbl.appendChild(tbody);wrap.appendChild(tbl);gWrap.appendChild(wrap);
   if(legend)legend.innerHTML="<span style='margin-right:12px'><span style='display:inline-block;width:20px;height:10px;background:repeating-linear-gradient(45deg,#2563eb,#2563eb 3px,rgba(255,255,255,.6) 3px,rgba(255,255,255,.6) 6px);border:1px solid #2563eb;border-radius:3px;vertical-align:middle'></span> Pr&#233;visionnel (hachuré)</span><span style='margin-right:12px'><span style='display:inline-block;width:20px;height:10px;background:#2563eb;border-radius:3px;vertical-align:middle'></span> R&#233;el (plein)</span><span style='color:#dc2626'>| Aujourd&#39;hui</span>";
+  renderChargeHebdo(weeks,chantiers);
   renderChargeMensuelle(startDate,endDate,chantiers);
+}
+
+// ── Graphique de charge hebdomadaire (besoin vs capacité, semaine par semaine) ──
+function renderChargeHebdo(weeks,chantiers){
+  var wrap=document.getElementById("gantt-charge-weekly-wrap");
+  if(!wrap)return;
+  var withEffectif=chantiers.filter(function(c){return c.effectifPrevu&&c.dateDebutPrev&&c.dateFinPrev;});
+  var dispo=D.salaries.filter(function(s){return !s.isBureau;}).length||15;
+
+  var byWeek=weeks.map(function(w){
+    var wE=new Date(w.getTime()+6*24*60*60*1000);
+    var besoin=0;
+    withEffectif.forEach(function(ch){
+      var chS=new Date(ch.dateDebutPrev), chE=new Date(ch.dateFinPrev);
+      if(chS<=wE&&chE>=w)besoin+=ch.effectifPrevu;
+    });
+    return {w:w,besoin:besoin};
+  });
+
+  var maxVal=Math.max.apply(null,byWeek.map(function(b){return b.besoin;}).concat([dispo]));
+  var BAR_H=70; // hauteur max de la zone graphique, en px
+
+  var h="<h3 style='font-family:Syne,sans-serif;font-weight:800;font-size:14px;margin:0 0 4px;color:#1a1916'>📊 Charge prévisionnelle — capacité : "+dispo+" salariés</h3>";
+  h+="<p style='font-size:11px;color:#7a746c;margin:0 0 12px'>Besoin en personnel par semaine, comparé à l'effectif disponible.</p>";
+  h+="<div style='display:flex;align-items:flex-end;gap:3px;height:"+(BAR_H+34)+"px;border-bottom:2px dashed #94a3b8;position:relative;padding-bottom:2px'>";
+  byWeek.forEach(function(b){
+    var isOver=b.besoin>dispo;
+    var barVal=b.besoin||0;
+    var barH=maxVal>0?Math.max(4,Math.round((barVal/maxVal)*BAR_H)):4;
+    var label=isOver?("▲ +"+(b.besoin-dispo)):(b.besoin?("✓ "+dispo):"");
+    var subLabel=isOver?"":(b.besoin?"-dispo-":"");
+    h+="<div style='display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:22px;flex:1'>";
+    h+="<div style='font-size:8px;color:"+(isOver?"#dc2626":"#166534")+";font-weight:700;white-space:nowrap;margin-bottom:2px'>"+label+"</div>";
+    if(subLabel)h+="<div style='font-size:7px;color:#94a3b8;margin-bottom:2px'>"+subLabel+"</div>";
+    h+="<div title='S"+getISOWeek(b.w)+" — besoin: "+b.besoin+" / dispo: "+dispo+"' style='width:100%;height:"+barH+"px;background:"+(isOver?"#ef4444":(b.besoin?"#22c55e":"#e2e8f0"))+";border-radius:3px 3px 0 0'></div>";
+    h+="</div>";
+  });
+  h+="</div>";
+  h+="<div style='display:flex;gap:16px;margin-top:10px;font-size:11px;color:#475569;flex-wrap:wrap'>";
+  h+="<span><span style='display:inline-block;width:10px;height:10px;background:#22c55e;border-radius:2px;vertical-align:middle;margin-right:4px'></span>Effectif suffisant</span>";
+  h+="<span><span style='display:inline-block;width:10px;height:10px;background:#ef4444;border-radius:2px;vertical-align:middle;margin-right:4px'></span>Manque de personnel</span>";
+  h+="<span>┄ Capacité totale ("+dispo+")</span>";
+  h+="</div>";
+  wrap.innerHTML=h;
 }
 
 // ── Carte de charge mensuelle prévisionnelle ──
@@ -5006,74 +5052,62 @@ function renderChargeMensuelle(startDate,endDate,chantiers){
 
   if(!months.length){wrap.innerHTML="";return;}
 
-  // Calcule, pour chaque chantier et chaque mois, s'il est actif ce mois-là
+  // Calcule, pour chaque mois, le besoin total (somme des effectifs prévus des chantiers actifs)
   var byMonth=months.map(function(mo){
     var moStart=mo, moEnd=new Date(mo.getFullYear(),mo.getMonth()+1,0);
-    var total=0;var detail=[];
+    var total=0;
     withEffectif.forEach(function(ch){
       var chS=new Date(ch.dateDebutPrev), chE=new Date(ch.dateFinPrev);
-      if(chS<=moEnd&&chE>=moStart){
-        total+=ch.effectifPrevu;
-        detail.push({nom:(ch.ref?ch.ref+" - ":"")+ch.nom,color:ch.color,n:ch.effectifPrevu});
-      }
+      if(chS<=moEnd&&chE>=moStart)total+=ch.effectifPrevu;
     });
-    return {mo:mo,total:total,detail:detail};
+    return {mo:mo,total:total};
   });
 
-  // Effectif réel de l'entreprise (nombre de salariés hors bureau pur), pour calibrer la couleur
-  var effectifReel=D.salaries.filter(function(s){return !s.isBureau;}).length||15;
-  var maxTotal=Math.max.apply(null,byMonth.map(function(b){return b.total;}).concat([effectifReel]));
+  // Effectif réel disponible (salariés hors bureau pur)
+  var dispo=D.salaries.filter(function(s){return !s.isBureau;}).length||15;
 
-  function heatColor(v){
-    if(!v)return "#f8fafc";
-    var ratio=Math.min(1,v/effectifReel);
-    // Vert clair -> jaune -> rouge selon le ratio par rapport à l'effectif réel
-    if(ratio<=0.5){
-      var t=ratio/0.5;
-      return "rgb("+Math.round(220-80*t)+","+Math.round(252-20*t)+","+Math.round(231-100*t)+")";
-    } else if(ratio<=1){
-      var t2=(ratio-0.5)/0.5;
-      return "rgb("+Math.round(140+115*t2)+","+Math.round(232-92*t2)+","+Math.round(131-90*t2)+")";
-    } else {
-      var t3=Math.min(1,(ratio-1)/0.5);
-      return "rgb("+Math.round(255-45*t3)+","+Math.round(140-100*t3)+","+Math.round(41-30*t3)+")";
-    }
+  function statusFor(besoin){
+    if(!besoin)return null;
+    if(besoin>dispo)return {label:"🔺 "+besoin+"/"+dispo,cls:"surcharge",bg:"#fee2e2",fg:"#991b1b"};
+    if(besoin>=dispo*0.8)return {label:"🟠 "+besoin+"/"+dispo,cls:"sature",bg:"#fef3c7",fg:"#92400e"};
+    return {label:"✅ "+besoin+"/"+dispo,cls:"suffisant",bg:"#dcfce7",fg:"#166534"};
   }
 
-  var h="<h3 style='font-family:Syne,sans-serif;font-weight:800;font-size:14px;margin:0 0 4px;color:#1a1916'>📊 Charge mensuelle prévisionnelle</h3>";
-  h+="<p style='font-size:11px;color:#7a746c;margin:0 0 12px'>Effectif prévu, réparti par mois selon les périodes prévisionnelles des chantiers. Comparé à l'effectif réel de l'entreprise ("+effectifReel+" salariés) pour la couleur.</p>";
+  var h="<h3 style='font-family:Syne,sans-serif;font-weight:800;font-size:14px;margin:0 0 4px;color:#1a1916'>🌡️ Carte de charge mensuelle</h3>";
+  h+="<p style='font-size:11px;color:#7a746c;margin:0 0 12px'>Effectif prévu par chantier et par mois, comparé à l'effectif disponible ("+dispo+" salariés).</p>";
   h+="<table style='border-collapse:collapse;font-size:11px'>";
-  h+="<thead><tr><th style='padding:6px 10px;text-align:left;background:#1a1916;color:#fff;position:sticky;left:0;min-width:140px'>Total</th>";
+  h+="<thead><tr><th style='padding:6px 10px;text-align:left;background:#e2e8f0;position:sticky;left:0;min-width:160px'>Chantier</th>";
   byMonth.forEach(function(b){
-    h+="<th style='padding:6px 8px;background:#1a1916;color:#fff;min-width:54px;font-size:10px'>"+b.mo.toLocaleDateString("fr-FR",{month:"short",year:"2-digit"})+"</th>";
+    h+="<th style='padding:6px 8px;background:#e2e8f0;min-width:54px;font-size:10px'>"+b.mo.toLocaleDateString("fr-FR",{month:"short",year:"2-digit"})+"</th>";
   });
-  h+="</tr></thead><tbody><tr>";
-  h+="<td style='padding:6px 10px;font-weight:700;background:#f1f5f9;position:sticky;left:0'>Effectif mobilisé</td>";
+  h+="</tr></thead><tbody>";
+
+  if(!withEffectif.length){
+    h+="<tr><td colspan='"+(months.length+1)+"' style='padding:14px;text-align:center;color:#94a3b8;font-style:italic'>Renseignez l'effectif prévu et les dates prévisionnelles sur les chantiers pour voir la charge.</td></tr>";
+  }
+
+  withEffectif.forEach(function(ch){
+    h+="<tr><td style='padding:5px 10px;background:#fff;position:sticky;left:0;border:1px solid #e2e8f0'><span style='display:inline-block;width:8px;height:8px;border-radius:50%;background:"+ch.color+";margin-right:5px'></span>"+(ch.ref?ch.ref+" - ":"")+ch.nom+"</td>";
+    byMonth.forEach(function(b){
+      var chS=new Date(ch.dateDebutPrev), chE=new Date(ch.dateFinPrev);
+      var moStart=b.mo, moEnd=new Date(b.mo.getFullYear(),b.mo.getMonth()+1,0);
+      var active=chS<=moEnd&&chE>=moStart;
+      h+="<td style='padding:5px 8px;text-align:center;border:1px solid #e2e8f0;background:"+(active?ch.color+"33":"#fff")+";color:"+(active?"#1a1916":"#cbd5e1")+";font-weight:"+(active?"600":"400")+"'>"+(active?ch.effectifPrevu:"—")+"</td>";
+    });
+    h+="</tr>";
+  });
+
+  // Ligne Charge globale
+  h+="<tr><td style='padding:6px 10px;font-weight:700;background:#1a1916;color:#fff;position:sticky;left:0'>⚡ Charge globale</td>";
   byMonth.forEach(function(b){
-    h+="<td style='padding:6px 8px;text-align:center;font-weight:700;background:"+heatColor(b.total)+";border:1px solid #e2e8f0' title='"+b.detail.map(function(d){return d.nom+": "+d.n;}).join(", ")+"'>"+(b.total||"—")+"</td>";
+    var st=statusFor(b.total);
+    h+="<td style='padding:6px 8px;text-align:center;font-weight:700;border:1px solid #e2e8f0;background:"+(st?st.bg:"#f8fafc")+";color:"+(st?st.fg:"#94a3b8")+"'>"+(st?st.label:"—")+"</td>";
   });
   h+="</tr></tbody></table>";
 
-  if(withEffectif.length){
-    h+="<div style='margin-top:10px'>";
-    h+="<span id='charge-detail-toggle' style='font-size:11px;color:#0891b2;cursor:pointer;text-decoration:underline' onclick='document.getElementById(\"charge-detail-table\").style.display=document.getElementById(\"charge-detail-table\").style.display===\"none\"?\"block\":\"none\"'>Voir le détail par chantier</span>";
-    h+="<div id='charge-detail-table' style='display:none;margin-top:8px'>";
-    h+="<table style='border-collapse:collapse;font-size:11px'>";
-    h+="<thead><tr><th style='padding:5px 10px;text-align:left;background:#e2e8f0;position:sticky;left:0;min-width:140px'>Chantier</th>";
-    byMonth.forEach(function(b){h+="<th style='padding:5px 8px;background:#e2e8f0;min-width:54px;font-size:10px'>"+b.mo.toLocaleDateString("fr-FR",{month:"short",year:"2-digit"})+"</th>";});
-    h+="</tr></thead><tbody>";
-    withEffectif.forEach(function(ch){
-      h+="<tr><td style='padding:5px 10px;background:#fff;position:sticky;left:0;border:1px solid #e2e8f0'><span style='display:inline-block;width:8px;height:8px;border-radius:50%;background:"+ch.color+";margin-right:5px'></span>"+(ch.ref?ch.ref+" - ":"")+ch.nom+"</td>";
-      byMonth.forEach(function(b){
-        var chS=new Date(ch.dateDebutPrev), chE=new Date(ch.dateFinPrev);
-        var moStart=b.mo, moEnd=new Date(b.mo.getFullYear(),b.mo.getMonth()+1,0);
-        var active=chS<=moEnd&&chE>=moStart;
-        h+="<td style='padding:5px 8px;text-align:center;border:1px solid #e2e8f0;background:#fff;color:"+(active?"#166534":"#cbd5e1")+"'>"+(active?ch.effectifPrevu:"—")+"</td>";
-      });
-      h+="</tr>";
-    });
-    h+="</tbody></table></div></div>";
-  }
+  h+="<div style='display:flex;gap:16px;margin-top:10px;font-size:11px;color:#475569;flex-wrap:wrap'>";
+  h+="<span>✅ x/y Suffisant</span><span>🟠 x/y Saturé</span><span>🔺 x/y Surcharge</span>";
+  h+="</div>";
 
   wrap.innerHTML=h;
 }
