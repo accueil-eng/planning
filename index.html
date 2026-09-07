@@ -3243,15 +3243,29 @@ function showProfileModal() {
   sub.textContent = "Cliquez sur votre profil pour accéder à votre espace.";
   box.appendChild(sub);
 
+  var entries=[];
   Object.keys(PROFILES).forEach(function(key){
     if(key==="planningpublic")return; // accessible uniquement via le lien dédié, pas au choix manuel
-    var p = PROFILES[key];
+    var p=PROFILES[key];
+    if(p.pins){
+      // Un bouton par personne, chacun avec son propre code PIN
+      p.pins.forEach(function(entry){
+        entries.push({key:key,p:p,displayName:entry.name,personPin:entry.pin,subtitle:"Accès complet · Tout modifiable"});
+      });
+    } else {
+      entries.push({key:key,p:p,displayName:p.name,personPin:null,subtitle:key==="salarie"?"Planning · Pointage · Absences":key==="analyse"?"Prévisionnel · Bilans":""});
+    }
+  });
+
+  entries.forEach(function(ent){
+    var key=ent.key, p=ent.p;
+    var isActive = key===_currentProfile && (key!=="bureau" || ent.displayName===_bureauIdentity);
     var btn = document.createElement("div");
-    btn.style.cssText = "display:flex;align-items:center;gap:12px;padding:14px 16px;border:2px solid " + (key===_currentProfile ? p.color : "#e0dbd3") + ";border-radius:10px;cursor:pointer;margin-bottom:10px;transition:border-color .15s";
+    btn.style.cssText = "display:flex;align-items:center;gap:12px;padding:14px 16px;border:2px solid " + (isActive ? p.color : "#e0dbd3") + ";border-radius:10px;cursor:pointer;margin-bottom:10px;transition:border-color .15s";
     btn.onmouseover = function(){ btn.style.borderColor = p.color; };
-    btn.onmouseout = function(){ btn.style.borderColor = key===_currentProfile ? p.color : "#e0dbd3"; };
+    btn.onmouseout = function(){ btn.style.borderColor = isActive ? p.color : "#e0dbd3"; };
     btn.onclick = function(){
-      if(p.pin||p.pins){
+      if(ent.personPin||p.pin){
         // Ask PIN
         var pinBox = document.createElement("div");
         pinBox.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10000;display:flex;align-items:center;justify-content:center";
@@ -3259,7 +3273,7 @@ function showProfileModal() {
         pb.style.cssText = "background:#fff;border-radius:12px;padding:24px;max-width:300px;width:92%;box-shadow:0 12px 40px rgba(0,0,0,.2);font-family:DM Sans,sans-serif";
         var ptitle = document.createElement("div");
         ptitle.style.cssText = "font-weight:700;font-size:15px;margin-bottom:12px;color:#1a1916";
-        ptitle.textContent = "🔒 Code PIN — " + p.name;
+        ptitle.textContent = "🔒 Code PIN — " + ent.displayName;
         pb.appendChild(ptitle);
         var pinRow = document.createElement("div");
         pinRow.style.cssText = "display:flex;gap:8px";
@@ -3293,9 +3307,8 @@ function showProfileModal() {
             pinOk.disabled=false; pinInp.disabled=false;
             var matchedPerson=null;
             var ok=false;
-            if(p.pins){
-              var found=p.pins.find(function(entry){return entry.pin===hashed;});
-              if(found){ok=true;matchedPerson=found.name;}
+            if(ent.personPin){
+              if(hashed===ent.personPin){ok=true;matchedPerson=ent.displayName;}
             } else if(hashed===p.pin){
               ok=true;
             }
@@ -3323,11 +3336,10 @@ function showProfileModal() {
           }).catch(function(err){
             // crypto.subtle a échoué — retour à la comparaison directe
             pinOk.disabled=false; pinInp.disabled=false;
-            if(p.pins){
-              var foundPlain=p.pins.find(function(entry){return typed===entry.pin;});
-              if(foundPlain){
-                _bureauIdentity=foundPlain.name;localStorage.setItem("bureau_identity",foundPlain.name);
-                pinSuccess(key);pinBox.remove();modal.remove();applyProfile(key);showToast("👤 Connecté : "+foundPlain.name);
+            if(ent.personPin){
+              if(typed===ent.personPin){
+                _bureauIdentity=ent.displayName;localStorage.setItem("bureau_identity",ent.displayName);
+                pinSuccess(key);pinBox.remove();modal.remove();applyProfile(key);showToast("👤 Connecté : "+ent.displayName);
               } else {
                 var a2=pinFail(key);pinInp.value="";pinInp.focus();pinErr.style.display="block";
                 pinErr.textContent="Code incorrect.";
@@ -3360,23 +3372,23 @@ function showProfileModal() {
       } else {
         modal.remove();
         applyProfile(key);
-        showToast("👤 Connecté : " + p.name);
+        showToast("👤 Connecté : " + ent.displayName);
       }
     };
 
     var av = document.createElement("div");
     av.style.cssText = "width:40px;height:40px;border-radius:50%;background:"+p.color+";display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;flex-shrink:0";
-    av.textContent = p.name[0];
+    av.textContent = ent.displayName[0];
     btn.appendChild(av);
 
     var info = document.createElement("div");
     var nm = document.createElement("div");
     nm.style.cssText = "font-weight:600;font-size:15px;color:#1a1916";
-    nm.textContent = p.name;
+    nm.textContent = ent.displayName;
     info.appendChild(nm);
     var ds = document.createElement("div");
     ds.style.cssText = "font-size:11px;color:#7a746c;margin-top:2px";
-    ds.textContent = key === "bureau" ? "Accès complet · Tout modifiable" : key === "salarie" ? "Planning · Pointage · Absences" : key === "analyse" ? "Prévisionnel · Bilans" : "";
+    ds.textContent = ent.subtitle;
     info.appendChild(ds);
     btn.appendChild(info);
 
