@@ -4848,9 +4848,10 @@ function RGANTT(){
     if(curVal)ganttSel.value=curVal;
   }
   var ganttFilter=ganttSel?ganttSel.value:"";
+  var GANTT_EXCLUDED_REFS=["9200","9300","804300"]; // Bureau, Dépôt, Cointreau — pas de vrais chantiers
   var chantiers=ganttFilter?D.chantiers.filter(function(c){return c.id===ganttFilter;}):D.chantiers;
-  // Show all non-finished chantiers
-  chantiers=D.chantiers.filter(function(c){return !c.done;});
+  // Show all non-finished chantiers, hors codes non-chantiers (Bureau/Dépôt/Cointreau)
+  chantiers=D.chantiers.filter(function(c){return !c.done&&GANTT_EXCLUDED_REFS.indexOf((c.ref||"").trim())<0;});
   chantiers=chantiers.slice().sort(function(a,b){
     var ra=(a.ref||"").trim(),rb=(b.ref||"").trim();
     if(!ra&&!rb)return 0;
