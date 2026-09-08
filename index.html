@@ -5703,6 +5703,14 @@ var RTT_REPORT_CUTOFF_YEAR=2026; // Année exceptionnelle : report appliqué fin
 var RTT_REPORT_CUTOFF_MONTH=5; // Mois jusqu'auquel rien n'est calculé (inclus)
 
 // Calcule le solde RTT au 31 décembre d'une année donnée pour un salarié (report inclus).
+// Comme isOutOfContract, mais pour une date donnée directement (pas liée à la semaine affichée CW).
+function isDateOutOfContract(sId,d){
+  var sal=D.salaries.find(function(s){return s.id===sId;});
+  if(!sal)return false;
+  if(sal.contratDebut&&d<pd(sal.contratDebut))return true;
+  if(sal.contratFin&&d>pd(sal.contratFin))return true;
+  return false;
+}
 function computeYearEndSolde(salId,annee){
   var isCutoffYr=(annee===RTT_REPORT_CUTOFF_YEAR);
   var startMo=isCutoffYr?(RTT_REPORT_CUTOFF_MONTH+1):1;
@@ -5718,6 +5726,7 @@ function computeYearEndSolde(salId,annee){
       getWeeksOfMonth(mo,annee).forEach(function(wk){
         getDatesOfWeek(wk,annee).forEach(function(dt,di){
           if(dt.getMonth()+1!==mo||dt.getFullYear()!==annee)return;
+          if(isDateOutOfContract(salId,dt))return; // pas de RTT en dehors de la période de contrat
           var a=ptGet(mo,annee,"rtt_acq",salId,wk,di);
           acquis+=(a!==""?parseFloat(a)||0:(di<4&&!isFerie(dt)?0.5:0));
         });
@@ -5821,6 +5830,7 @@ function RRTTRECAP(){
           getDatesOfWeek(wk,annee).forEach(function(dt,di){
             var inM=(dt.getMonth()+1===mo&&dt.getFullYear()===annee);
             if(!inM)return;
+            if(isDateOutOfContract(sal.id,dt))return; // pas de RTT en dehors de la période de contrat
             var a=ptGet(mo,annee,"rtt_acq",sal.id,wk,di);
             acquis+=(a!==""?parseFloat(a)||0:(di<4&&!isFerie(dt)?0.5:0));
           });
