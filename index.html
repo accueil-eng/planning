@@ -3200,7 +3200,12 @@ function showModeChooser(ent){
   var backBtn=document.createElement("button");
   backBtn.textContent="← Changer de personne";
   backBtn.style.cssText="width:100%;height:34px;background:none;border:1px solid #c5bfb5;border-radius:8px;font-size:12px;cursor:pointer;margin-top:4px";
-  backBtn.onclick=function(){modal.remove();showProfileModal();};
+  backBtn.onclick=function(){
+    modal.remove();
+    _bureauIdentity="";
+    localStorage.removeItem("bureau_identity");
+    showProfileModal();
+  };
   box.appendChild(backBtn);
 
   modal.appendChild(box);document.body.appendChild(modal);
@@ -3326,6 +3331,15 @@ function showGHTokenModal(){
 function showProfileModal() {
   var existing = document.getElementById("profile-modal");
   if(existing) existing.remove();
+
+  // Identité déjà connue cette session (PIN déjà saisi) : on saute directement au choix du mode.
+  if(_bureauIdentity&&PROFILES.bureau.pins){
+    var known=PROFILES.bureau.pins.find(function(e){return e.name===_bureauIdentity;});
+    if(known){
+      showModeChooser({key:"bureau",p:PROFILES.bureau,displayName:known.name,selfSalId:known.selfSalId});
+      return;
+    }
+  }
 
   var modal = document.createElement("div");
   modal.id = "profile-modal";
