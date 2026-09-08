@@ -5105,11 +5105,12 @@ function renderChargeMensuelle(startDate,endDate,chantiers){
 
   var h="<h3 style='font-family:Syne,sans-serif;font-weight:800;font-size:14px;margin:0 0 4px;color:#1a1916'>🌡️ Carte de charge mensuelle</h3>";
   h+="<p style='font-size:11px;color:#7a746c;margin:0 0 12px'>Effectif prévu par chantier et par mois, comparé à l'effectif disponible ("+dispo+" salariés).</p>";
-  h+="<div style='width:max-content'>";
-  h+="<table style='border-collapse:collapse;font-size:11px'>";
-  h+="<thead><tr><th style='padding:6px 10px;text-align:left;background:#e2e8f0;position:sticky;left:0;min-width:160px'>Chantier</th>";
+  var totalTableWidth=160+months.length*55;
+  h+="<div style='width:"+totalTableWidth+"px'>";
+  h+="<table style='border-collapse:collapse;font-size:11px;width:"+totalTableWidth+"px;table-layout:fixed'>";
+  h+="<thead><tr><th style='padding:6px 10px;text-align:left;background:#e2e8f0;position:sticky;left:0;width:160px'>Chantier</th>";
   byMonth.forEach(function(b){
-    h+="<th style='padding:6px 8px;background:#e2e8f0;min-width:54px;font-size:10px'>"+b.mo.toLocaleDateString("fr-FR",{month:"short",year:"2-digit"})+"</th>";
+    h+="<th style='padding:6px 8px;background:#e2e8f0;width:55px;font-size:10px'>"+b.mo.toLocaleDateString("fr-FR",{month:"short",year:"2-digit"})+"</th>";
   });
   h+="</tr></thead><tbody>";
 
