@@ -5105,6 +5105,8 @@ function renderChargeMensuelle(startDate,endDate,chantiers){
 
   var h="<h3 style='font-family:Syne,sans-serif;font-weight:800;font-size:14px;margin:0 0 4px;color:#1a1916'>🌡️ Carte de charge mensuelle</h3>";
   h+="<p style='font-size:11px;color:#7a746c;margin:0 0 12px'>Effectif prévu par chantier et par mois, comparé à l'effectif disponible ("+dispo+" salariés).</p>";
+  h+="<input type='range' id='charge-mensuelle-slider' min='0' max='1000' value='0' style='width:100%;max-width:500px;margin-bottom:10px;accent-color:#0891b2;cursor:pointer'>";
+  h+="<div id='charge-mensuelle-scroll' style='overflow-x:auto'>";
   h+="<table style='border-collapse:collapse;font-size:11px'>";
   h+="<thead><tr><th style='padding:6px 10px;text-align:left;background:#e2e8f0;position:sticky;left:0;min-width:160px'>Chantier</th>";
   byMonth.forEach(function(b){
@@ -5137,12 +5139,27 @@ function renderChargeMensuelle(startDate,endDate,chantiers){
     h+="<td style='padding:6px 8px;text-align:center;font-weight:700;border:1px solid #e2e8f0;background:"+(st?st.bg:"#f8fafc")+";color:"+(st?st.fg:"#94a3b8")+"'>"+(st?st.label:"—")+"</td>";
   });
   h+="</tr></tbody></table>";
+  h+="</div>";
 
   h+="<div style='display:flex;gap:16px;margin-top:10px;font-size:11px;color:#475569;flex-wrap:wrap'>";
   h+="<span>✅ x/y Suffisant</span><span>🟠 x/y Saturé</span><span>🔺 x/y Surcharge</span>";
   h+="</div>";
 
   wrap.innerHTML=h;
+
+  // Synchronise le curseur et le défilement horizontal du tableau
+  var scrollBox=document.getElementById("charge-mensuelle-scroll");
+  var slider=document.getElementById("charge-mensuelle-slider");
+  if(scrollBox&&slider){
+    slider.oninput=function(){
+      var maxScroll=scrollBox.scrollWidth-scrollBox.clientWidth;
+      scrollBox.scrollLeft=(slider.value/1000)*maxScroll;
+    };
+    scrollBox.onscroll=function(){
+      var maxScroll=scrollBox.scrollWidth-scrollBox.clientWidth;
+      slider.value=maxScroll>0?Math.round((scrollBox.scrollLeft/maxScroll)*1000):0;
+    };
+  }
 }
 
 
