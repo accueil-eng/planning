@@ -1484,6 +1484,7 @@ function _onGroupMouseUp(e){
     // Carry over vehicle assignment
     var veh=D.vehAssign["va|"+fromCk+"|"+sid];
     if(veh)D.vehAssign["va|"+targetCk+"|"+sid]=veh;
+    else autoAssignDefaultVehicle(targetCk,sid);
   });
   // Source cell stays untouched — this is a COPY, not a move
 
@@ -1586,6 +1587,7 @@ function _showMultiDayModal(sid,ck,fromCk,startDay,sal){
       var targetCk=parts[0]+"|"+row+"|"+i;
       if((D.cells[targetCk]||[]).indexOf(sid)<0){if(!D.cells[targetCk])D.cells[targetCk]=[];D.cells[targetCk].push(sid);}
       if(curVehId)D.vehAssign["va|"+targetCk+"|"+sid]=curVehId;
+      else autoAssignDefaultVehicle(targetCk,sid);
       // Set chantier start date if not already set
       var chId=D.rowChantiers[parts[0]+"|"+row];
       if(chId){var ch=D.chantiers.find(function(c){return c.id===chId;});
@@ -1633,6 +1635,14 @@ function openVDrop(ck,sId,anchorEl){
 function closeVDropOutside(e){
   if(!e.target.closest(".vdrop"))document.querySelectorAll(".vdrop.on").forEach(function(d){d.classList.remove("on");});}
 function closeVDrop(){document.querySelectorAll(".vdrop.on").forEach(function(d){d.classList.remove("on");});}
+// Attribue automatiquement le véhicule habituel d'un salarié quand il est placé sur une case,
+// s'il n'a pas déjà un véhicule assigné sur cette case et qu'un véhicule lui est associé par défaut.
+function autoAssignDefaultVehicle(cellKey,salId){
+  if(D.vehAssign["va|"+cellKey+"|"+salId])return; // déjà un véhicule sur cette case
+  var veh=D.vehicules.find(function(v){return v.defaultDriverId===salId;});
+  if(!veh)return;
+  D.vehAssign["va|"+cellKey+"|"+salId]=veh.id;
+}
 function assignVeh(ck,sId,vehId){
   if(_currentProfile==="planningpublic")return;
   if(vehId===null){delete D.vehAssign["va|"+ck+"|"+sId];}
@@ -1858,6 +1868,7 @@ function mkDC(ck,ri,di){
           if(c2.length&&!confirm(s.prenom+(s.nom?" "+s.nom:"")+" est deja sur "+c2[0]+". Ajouter quand meme ?"))return;
           if(!D.cells[cellKey])D.cells[cellKey]=[];
           if(D.cells[cellKey].indexOf(s.id)<0)D.cells[cellKey].push(s.id);
+          autoAssignDefaultVehicle(cellKey,s.id);
           picker.style.display="none";ab.style.display="";
           save();RP();
         };})(sal,ck,di);
@@ -2103,6 +2114,7 @@ function _onStretchUp(e){
       D.cells[targetCk].push(sid);
     }
     if(curVehId)D.vehAssign["va|"+targetCk+"|"+sid]=curVehId;
+    else autoAssignDefaultVehicle(targetCk,sid);
   }
   // Set chantier start date if first assignment
   var srcP=_stretchCk.split("|");
@@ -2988,7 +3000,7 @@ function RV(){
   var wrap=document.createElement("div");wrap.style.overflowX="auto";
   var table=document.createElement("table");table.className="veh-table";
   var thead=table.createTHead();var hr=thead.insertRow();
-  ["N°","Immat.","Modèle","Dern. vidange","État","Ctrl tech.","État","Anti-pol.","État","📅 RDV",""].forEach(function(h,i){var th=document.createElement("th");th.textContent=h;if(i===9)th.style.minWidth="160px";hr.appendChild(th);});
+  ["N°","Immat.","Modèle","👤 Conducteur habituel","Dern. vidange","État","Ctrl tech.","État","Anti-pol.","État","📅 RDV",""].forEach(function(h,i){var th=document.createElement("th");th.textContent=h;if(i===10)th.style.minWidth="160px";hr.appendChild(th);});
   var tbody=table.createTBody();
   D.vehicules.forEach(function(v){
     if(!v.rdvs)v.rdvs=[];
@@ -2999,6 +3011,17 @@ function RV(){
     var td0=row.insertCell();td0.innerHTML="<b>"+(v.num||"—")+"</b>";
     var td1=row.insertCell();td1.style.cssText="font-weight:600;color:var(--acc)";td1.textContent=v.immat||"—";
     var td2=row.insertCell();td2.textContent=v.model||"—";
+    var tdDriver=row.insertCell();
+    var selDriver=document.createElement("select");
+    selDriver.style.cssText=dstyle;
+    var optNone=document.createElement("option");optNone.value="";optNone.textContent="— Aucun —";selDriver.appendChild(optNone);
+    D.salaries.slice().sort(function(a,b){return (a.prenom||"").localeCompare(b.prenom||"");}).forEach(function(s){
+      var opt=document.createElement("option");opt.value=s.id;opt.textContent=s.prenom+(s.nom?" "+s.nom:"");
+      if(v.defaultDriverId===s.id)opt.selected=true;
+      selDriver.appendChild(opt);
+    });
+    selDriver.onchange=(function(vid){return function(){upVeh(vid,"defaultDriverId",this.value||null);};})(v.id);
+    tdDriver.appendChild(selDriver);
     function mkDateCell(field,lastVal,stat,nextVal){
       var tdc=row.insertCell();var inp=document.createElement("input");inp.type="date";inp.value=lastVal||"";inp.style.cssText=dstyle;
       inp.addEventListener("change",(function(f,vid){return function(){upVeh(vid,f,this.value);};})(field,v.id));
