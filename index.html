@@ -2325,6 +2325,7 @@ function editSal(id){
   var fContratDebut=mkRow("📅 Début contrat",Object.assign(document.createElement("input"),{type:"date",value:sal.contratDebut||"",style:"flex:1;height:32px;border:1px solid #c5bfb5;border-radius:6px;padding:0 8px;font-size:12px;outline:none"}));
   var fContratFin=mkRow("📅 Fin contrat",Object.assign(document.createElement("input"),{type:"date",value:sal.contratFin||"",style:"flex:1;height:32px;border:1px solid #c5bfb5;border-radius:6px;padding:0 8px;font-size:12px;outline:none"}));
   var fBureau=mkRow("\uD83C\uDFE2 Affect\u00e9 Bureau (9200)",Object.assign(document.createElement("input"),{type:"checkbox",checked:!!sal.isBureau,style:"width:18px;height:18px;accent-color:#db2777;cursor:pointer"}));
+  var fNoTT=mkRow("\uD83D\uDE97 Pas de trajet/transport (conducteur)",Object.assign(document.createElement("input"),{type:"checkbox",checked:!!sal.excludeTrajetTransport,style:"width:18px;height:18px;accent-color:#0891b2;cursor:pointer"}));
   [["salarie","Salarié"],["apprenti","Apprenti"],["stagiaire","Stagiaire"],["interimaire","Intérimaire"]].forEach(function(o){var opt=document.createElement("option");opt.value=o[0];opt.textContent=o[1];if(sal.type===o[0])opt.selected=true;fType.appendChild(opt);});
   var btnRow=document.createElement("div");btnRow.style.cssText="display:flex;gap:8px;margin-top:6px";
   var okBtn=document.createElement("button");okBtn.style.cssText="flex:1;height:36px;background:#1a1916;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer";okBtn.textContent="Enregistrer";
@@ -2334,7 +2335,7 @@ function editSal(id){
     sal.whatsapp=fTel.value.trim().replace(/[^0-9]/g,"");
     sal.telType=fTelType.value;
     sal.telPerso=fTelPerso.value.trim().replace(/[^0-9]/g,"");
-    sal.ddn=fDdn.value;sal.visite=fVm.value;sal.visitePrev=fVmPrev.value;sal.type=fType.value;sal.isBureau=fBureau.checked;
+    sal.ddn=fDdn.value;sal.visite=fVm.value;sal.visitePrev=fVmPrev.value;sal.type=fType.value;sal.isBureau=fBureau.checked;sal.excludeTrajetTransport=fNoTT.checked;
     sal.contrat=fContrat.value;sal.contratDebut=fContratDebut.value;sal.contratFin=fContratFin.value;
     sal.taux=fTaux.value?parseFloat(fTaux.value):null;
     saveNow();modal.remove();RS();
@@ -6732,8 +6733,11 @@ function RPOINTAGE(){
               html+="<td style='"+tdStyle()+"padding:1px;text-align:center;background:#f0fdf4'><input type='number' value='"+rttVal+"' min='0' step='0.5' style='width:40px;height:24px;border:1px solid #bbf7d0;border-radius:3px;font-size:11px;text-align:center;padding:0 2px;outline:none;background:#f0fdf4;color:#16a34a;font-weight:600' data-pt='"+mois+"|"+annee+"|"+row.id+"|"+sal.id+"|"+wk+"|"+di+"' data-handler='ptNum'></td>";
             }
           } else if(row.type==="zone_dd"){
+            var isExcludedTT=sal.excludeTrajetTransport&&(row.id==="trajet"||row.id==="transport");
             var inMz=(dt.getMonth()+1===mois&&dt.getFullYear()===annee);
-            if(!inMz){
+            if(isExcludedTT){
+              html+="<td style='"+tdStyle()+"background:#f5f5f5;text-align:center' title='Pas de trajet/transport pour ce salarié (conducteur)'><span style='font-size:9px;color:#cbd5e1'>—</span></td>";
+            } else if(!inMz){
               html+="<td style='"+tdStyle()+"background:#f5f5f5'></td>";
             } else if(isFerie(dt)){
               html+="<td style='"+tdStyle()+"background:#f1f5f9;text-align:center' title='"+getFerrieLabel(dt)+"'><span style='font-size:9px;color:#94a3b8'>🔴</span></td>";
