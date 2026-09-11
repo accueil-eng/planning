@@ -6824,7 +6824,7 @@ function RPOINTAGE(){
               });
               var zc=zval?(ZONE_COLORS[zval]||{bg:"#fff",border:"#e2e8f0"}):{bg:"#fff",border:"#e2e8f0"};
               var zonePtKey=mois+"|"+annee+"|"+row.id+"|"+sal.id+"|"+wk+"|"+di;
-              var zoneWeekBureauValidated=!!(D.bureauWeekValidations&&D.bureauWeekValidations[sal.id+"|"+wk+"|"+annee]);
+              var zoneWeekBureauValidated=!!(D.bureauWeekValidations&&D.bureauWeekValidations[sal.id+"|"+wk+"|"+annee])||isWeekLocked(sal.id,wk,mois,annee);
               var zoneClearBtnId=(zval&&!zoneWeekBureauValidated)?"zone-clear-"+sal.id+"-"+wk+"-"+di+"-"+row.id:"";
               html+="<td style='"+tdStyle()+"padding:1px;text-align:center;background:"+zc.bg+"'>";
               html+="<div style='display:flex;align-items:center;gap:2px;justify-content:center'>";
@@ -7038,7 +7038,7 @@ function RPOINTAGE(){
             wkT+=parseFloat(val)||0;
             var chCellKey=mois+"|"+annee+"|ch_"+chId+"|"+sal.id+"|"+wk+"|"+di;
             var chCellValidated=!!(D.chHoursValidated&&D.chHoursValidated[chCellKey]);
-            var chWeekBureauValidated=!!(D.bureauWeekValidations&&D.bureauWeekValidations[sal.id+"|"+wk+"|"+annee]);
+            var chWeekBureauValidated=!!(D.bureauWeekValidations&&D.bureauWeekValidations[sal.id+"|"+wk+"|"+annee])||isWeekLocked(sal.id,wk,mois,annee);
             var hasVal=val!==""&&parseFloat(val)>0;
             html+="<td style='"+tdStyle()+"padding:1px;text-align:center;background:#eff6ff'>";
             html+="<div style='display:flex;align-items:center;justify-content:center;gap:2px'>";
