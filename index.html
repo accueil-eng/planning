@@ -852,6 +852,8 @@ function loadMyPrivateData(cb){
       D.rttManual=Object.assign({},D.rttManual||{},mine.rttManual||{});
       D.ptWeekValidations=Object.assign({},D.ptWeekValidations||{},mine.ptWeekValidations||{});
       D.ptModifications=Object.assign({},D.ptModifications||{},mine.ptModifications||{});
+      D.ptLocks=Object.assign({},D.ptLocks||{},mine.ptLocks||{});
+      D.bureauWeekValidations=Object.assign({},D.bureauWeekValidations||{},mine.bureauWeekValidations||{});
     } else if(mine&&mine.error){
       console.log("Worker /me error:",mine.error);
     }
