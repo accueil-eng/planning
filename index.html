@@ -7838,8 +7838,12 @@ function renderPtValidationsList(){
   // On ne garde que les semaines pas encore traitées par le Bureau (ni validées, ni verrouillées).
   var entries=Object.keys(D.ptWeekValidations).map(function(k){return D.ptWeekValidations[k];})
     .filter(function(e){
-      var wkMois=getDatesOfWeek(e.semaine,e.annee)[0].getMonth()+1;
-      var alreadyDone=!!D.bureauWeekValidations[e.salId+"|"+e.semaine+"|"+e.annee]||isWeekLocked(e.salId,e.semaine,wkMois,e.annee);
+      var wkDates=getDatesOfWeek(e.semaine,e.annee);
+      var moisLundi=wkDates[0].getMonth()+1;
+      var moisVendredi=wkDates[4].getMonth()+1;
+      var alreadyDone=!!D.bureauWeekValidations[e.salId+"|"+e.semaine+"|"+e.annee]
+        ||isWeekLocked(e.salId,e.semaine,moisLundi,e.annee)
+        ||isWeekLocked(e.salId,e.semaine,moisVendredi,e.annee);
       return !alreadyDone;
     })
     .sort(function(a,b){return a.ts-b.ts;});
