@@ -1042,7 +1042,7 @@ function buildPublicSnapshot(src){
     return {id:c.id,ref:c.ref,nom:c.nom,adresse:c.adresse,color:c.color,done:c.done};
   });
   var pubVehicules=(S.vehicules||[]).map(function(v){
-    return {id:v.id,num:v.num,immat:v.immat,model:v.model};
+    return {id:v.id,num:v.num,immat:v.immat,model:v.model,excludeFromPlanning:v.excludeFromPlanning};
   });
   var pubAbsences=(S.absences||[]).map(function(a){
     return {id:a.id,salId:a.salId,debut:a.debut,fin:a.fin,type:a.type,heureDebut:a.heureDebut,heureFin:a.heureFin};
