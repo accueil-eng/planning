@@ -7497,20 +7497,25 @@ function renderValidateWeekButton(mois,annee,salId){
   var bindings=[];
   weeks.forEach(function(wk){
     var vKey=salId+"|"+wk+"|"+annee;
+    var bureauKey=salId+"|"+wk+"|"+annee;
+    var bureauValidated=!!(D.bureauWeekValidations&&D.bureauWeekValidations[bureauKey]);
     var locked=!!D.ptWeekValidations[vKey];
     var modified=!!(D.ptModifications&&D.ptModifications[salId+"|"+wk+"|"+annee]);
     var wkDates=getDatesOfWeek(wk,annee);
     var wkStart=new Date(wkDates[0]);wkStart.setHours(0,0,0,0);
     var isFuture=wkStart>today;
 
-    var bg=modified?"#fff1f2":locked?"#1a1916":isFuture?"#f1f5f9":"#fff";
-    var border=modified?"#fca5a5":locked?"#1a1916":isFuture?"#cbd5e1":"#e2e8f0";
-    var color=locked?"#fff":modified?"#dc2626":isFuture?"#94a3b8":"#1a1916";
+    var bg=bureauValidated?"#000":modified?"#fff1f2":locked?"#1a1916":isFuture?"#f1f5f9":"#fff";
+    var border=bureauValidated?"#000":modified?"#fca5a5":locked?"#1a1916":isFuture?"#cbd5e1":"#e2e8f0";
+    var color=(bureauValidated||locked)?"#fff":modified?"#dc2626":isFuture?"#94a3b8":"#1a1916";
 
     html+="<div style='border:1px solid "+border+";border-radius:8px;padding:6px 10px;background:"+bg+";min-width:90px;text-align:center'>";
-    html+="<div style='font-size:11px;font-weight:700;color:"+color+";margin-bottom:4px'>"+(locked?"🔒 ":modified?"✏️ ":"")+"S"+wk+"</div>";
+    html+="<div style='font-size:11px;font-weight:700;color:"+color+";margin-bottom:4px'>"+(bureauValidated?"🔒 ":locked?"🔒 ":modified?"✏️ ":"")+"S"+wk+"</div>";
 
-    if(isFuture){
+    if(bureauValidated){
+      html+="<div style='font-size:9px;color:#fff;margin-bottom:4px'>Validée Bureau</div>";
+      html+="<button type='button' data-sal='"+salId+"' data-wk='"+wk+"' data-an='"+annee+"' data-act='bureau-locked' style='font-size:9px;background:#374151;color:#fff;border:1px solid #6b7280;border-radius:4px;padding:2px 6px;cursor:pointer'>🔒 Verrouillée</button>";
+    } else if(isFuture){
       html+="<div style='font-size:9px;color:#94a3b8'>À venir</div>";
     } else if(locked&&!modified){
       html+="<div style='font-size:9px;color:#fff;margin-bottom:4px'>Verrouillé</div>";
@@ -7531,7 +7536,8 @@ function renderValidateWeekButton(mois,annee,salId){
   wrap.querySelectorAll("button[data-sal]").forEach(function(btn){
     var s=btn.dataset.sal;var w=parseInt(btn.dataset.wk);var a=parseInt(btn.dataset.an);var act=btn.dataset.act;
     function doAction(){
-      if(act==="unlock")unvalidateMyWeek(s,w,a);
+      if(act==="bureau-locked")showToast("🔒 Semaine validée par le Bureau — contactez Valérie si besoin d'une modification.");
+      else if(act==="unlock")unvalidateMyWeek(s,w,a);
       else validateMyWeek(s,w,a);
     }
     btn.addEventListener("touchstart",function(e){e.preventDefault();doAction();},{passive:false});
