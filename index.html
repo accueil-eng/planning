@@ -1984,7 +1984,7 @@ function mkChip(eid,ck,di,idx,all){
   if(!D.vehicules.length){var emp=document.createElement("div");emp.style.cssText="padding:8px 12px;font-size:11px;color:var(--dim)";emp.textContent="Aucun véhicule enregistré";vdl.appendChild(emp);}
   else{
     var dayAsgn=asgVehs(di);
-    D.vehicules.forEach(function(v){
+    D.vehicules.filter(function(v){return !v.excludeFromPlanning;}).forEach(function(v){
       var item=document.createElement("div");item.className="vdrop-item";
       var vcs2=vCS(v);var vcls2=vcs2?vcs2.worst:"none";var vcol=vcls2==="ok"?"#059669":vcls2==="warn"?"#b45309":"#dc2626";
       var isA=!!dayAsgn[v.id]&&D.vehAssign["va|"+ck+"|"+eid]!==v.id;
@@ -3002,7 +3002,7 @@ function RV(){
   var wrap=document.createElement("div");wrap.style.overflowX="auto";
   var table=document.createElement("table");table.className="veh-table";
   var thead=table.createTHead();var hr=thead.insertRow();
-  ["N°","Immat.","Modèle","👤 Conducteur habituel","Dern. vidange","État","Ctrl tech.","État","Anti-pol.","État","📅 RDV",""].forEach(function(h,i){var th=document.createElement("th");th.textContent=h;if(i===10)th.style.minWidth="160px";hr.appendChild(th);});
+  ["N°","Immat.","Modèle","👤 Conducteur habituel","🚫 Exclure du planning","Dern. vidange","État","Ctrl tech.","État","Anti-pol.","État","📅 RDV",""].forEach(function(h,i){var th=document.createElement("th");th.textContent=h;if(i===11)th.style.minWidth="160px";hr.appendChild(th);});
   var tbody=table.createTBody();
   D.vehicules.forEach(function(v){
     if(!v.rdvs)v.rdvs=[];
@@ -3024,6 +3024,12 @@ function RV(){
     });
     selDriver.onchange=(function(vid){return function(){upVeh(vid,"defaultDriverId",this.value||null);};})(v.id);
     tdDriver.appendChild(selDriver);
+    var tdExcl=row.insertCell();tdExcl.style.textAlign="center";
+    var cbExcl=document.createElement("input");cbExcl.type="checkbox";cbExcl.checked=!!v.excludeFromPlanning;
+    cbExcl.title="Exclure du planning (véhicule personnel, ne va pas sur les chantiers) — reste visible dans cet onglet";
+    cbExcl.style.cssText="width:16px;height:16px;cursor:pointer;accent-color:#dc2626";
+    cbExcl.onchange=(function(vid){return function(){upVeh(vid,"excludeFromPlanning",this.checked);};})(v.id);
+    tdExcl.appendChild(cbExcl);
     function mkDateCell(field,lastVal,stat,nextVal){
       var tdc=row.insertCell();var inp=document.createElement("input");inp.type="date";inp.value=lastVal||"";inp.style.cssText=dstyle;
       inp.addEventListener("change",(function(f,vid){return function(){upVeh(vid,f,this.value);};})(field,v.id));
