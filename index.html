@@ -344,6 +344,7 @@ body.profile-salarie .tabs{display:none}
     <input id="vmod" placeholder="Modèle" maxlength="40">
     <button class="btn btn-p" onclick="addVeh()">+ Ajouter</button>
     <button class="btn" style="margin-left:auto;background:#e0f2fe;border-color:#7dd3fc;color:#0369a1" onclick="printVehicules()">🖨️ Imprimer la liste</button>
+    <button class="btn" style="background:#fef3c7;border-color:#fcd34d;color:#92400e" onclick="printVehiculesEntretien()">🖨️ Imprimer avec entretien</button>
   </div>
   <div id="vehlist"></div>
 </div>
@@ -2966,6 +2967,39 @@ function printVehicules(){
   h+="<table><thead><tr><th>N°</th><th>Immatriculation</th><th>Modèle</th></tr></thead><tbody>";
   D.vehicules.forEach(function(v){
     h+="<tr><td><b>"+(v.num||"—")+"</b></td><td>"+(v.immat||"—")+"</td><td>"+(v.model||"—")+"</td></tr>";
+  });
+  h+="</tbody></table>";
+  h+="<p style='font-size:10px;color:#888;margin-top:20px'>Fonteneau Rénovation — Document généré automatiquement</p>";
+  h+="</body></html>";
+  var w=window.open("","_blank");
+  w.document.write(h);
+  w.document.close();
+  w.focus();
+  setTimeout(function(){w.print();},400);
+}
+function printVehiculesEntretien(){
+  var h="<!DOCTYPE html><html><head><meta charset='utf-8'>";
+  h+="<title>Véhicules — Entretien — Fonteneau Rénovation</title>";
+  h+="<style>body{font-family:Arial,sans-serif;font-size:12px;margin:20px}";
+  h+="h1{font-size:17px;margin:0 0 4px}h2{font-size:12px;color:#555;margin:0 0 18px;font-weight:normal}";
+  h+="table{border-collapse:collapse;width:100%}";
+  h+="th,td{border:1px solid #ccc;padding:7px 9px;text-align:left}";
+  h+="th{background:#1a1916;color:#fff;font-size:11px}";
+  h+="tr:nth-child(even){background:#f8f8f8}";
+  h+=".late{color:#dc2626;font-weight:700}.soon{color:#d97706;font-weight:700}.ok{color:#166534}.none{color:#94a3b8}";
+  h+="@media print{body{margin:10px}}</style></head><body>";
+  h+="<img src='"+APP_LOGO_DATAURI+"' style='height:60px;margin-bottom:10px' alt='Logo'>";
+  h+="<h1>🚐 Véhicules — Suivi entretien — Fonteneau Rénovation</h1>";
+  h+="<h2>Imprimé le "+new Date().toLocaleDateString("fr-FR")+"</h2>";
+  h+="<table><thead><tr><th>N°</th><th>Immatriculation</th><th>Modèle</th><th>Dern. vidange</th><th>Prochaine vidange</th><th>Dern. CT</th><th>Prochain CT</th><th>Dern. anti-pol.</th><th>Prochain anti-pol.</th></tr></thead><tbody>";
+  var fmtD=function(d){return d?new Date(d).toLocaleDateString("fr-FR"):"—";};
+  D.vehicules.forEach(function(v){
+    var nv=nD(v.vidange,12),nc=nD(v.ct,24),na=nD(v.antipol,12);
+    var sv=vStat(nv),sc=vStat(nc),sa=vStat(na);
+    h+="<tr><td><b>"+(v.num||"—")+"</b></td><td>"+(v.immat||"—")+"</td><td>"+(v.model||"—")+"</td>"
+      +"<td>"+fmtD(v.vidange)+"</td><td class='"+sv.cls+"'>"+fmtD(nv)+" ("+sv.b+")</td>"
+      +"<td>"+fmtD(v.ct)+"</td><td class='"+sc.cls+"'>"+fmtD(nc)+" ("+sc.b+")</td>"
+      +"<td>"+fmtD(v.antipol)+"</td><td class='"+sa.cls+"'>"+fmtD(na)+" ("+sa.b+")</td></tr>";
   });
   h+="</tbody></table>";
   h+="<p style='font-size:10px;color:#888;margin-top:20px'>Fonteneau Rénovation — Document généré automatiquement</p>";
