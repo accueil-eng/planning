@@ -411,6 +411,7 @@ body.profile-salarie .tabs{display:none}
     <input type="date" id="rdv-date" style="max-width:140px">
     <input type="text" id="rdv-nom" placeholder="Nom *" maxlength="60" style="min-width:130px">
     <input type="text" id="rdv-adresse" placeholder="Adresse" maxlength="100" style="min-width:160px">
+    <input type="text" id="rdv-ville" placeholder="Ville" maxlength="60" style="max-width:130px">
     <input type="text" id="rdv-tel" placeholder="Téléphone" maxlength="20" style="max-width:130px">
     <input type="text" id="rdv-mail" placeholder="Email" maxlength="80" style="max-width:160px">
     <input type="text" id="rdv-travaux" placeholder="Travaux demandés" maxlength="120" style="min-width:180px">
@@ -3914,6 +3915,7 @@ function addRDV(){
     date:document.getElementById("rdv-date").value,
     nom:nom,
     adresse:document.getElementById("rdv-adresse").value.trim(),
+    ville:document.getElementById("rdv-ville").value.trim(),
     tel:document.getElementById("rdv-tel").value.trim(),
     mail:document.getElementById("rdv-mail").value.trim(),
     travaux:document.getElementById("rdv-travaux").value.trim(),
@@ -3925,16 +3927,18 @@ function addRDV(){
   // Notification WhatsApp (copier-coller vers le groupe, WhatsApp ne permet pas l'envoi auto dans un groupe)
   var rdvNom=document.getElementById("rdv-nom").value;
   var rdvDate=document.getElementById("rdv-date").value;
+  var rdvVille=document.getElementById("rdv-ville").value;
   var rdvTel=document.getElementById("rdv-tel").value;
   var rdvTrav=document.getElementById("rdv-travaux").value;
   var notifMsgPlain="🔔 Nouvelle demande de RDV\n"
     +"👤 "+rdvNom+"\n"
     +(rdvDate?"📅 "+new Date(rdvDate).toLocaleDateString("fr-FR")+"\n":"")
+    +(rdvVille?"📍 "+rdvVille+"\n":"")
     +(rdvTel?"📱 "+rdvTel+"\n":"")
     +(rdvTrav?"🔧 "+rdvTrav+"\n":"")
     +"\nVoir : https://accueil-eng.github.io/planning/";
   showRdvNotifBanner(notifMsgPlain);
-  ["rdv-date","rdv-nom","rdv-adresse","rdv-tel","rdv-mail","rdv-travaux","rdv-obs"].forEach(function(id){document.getElementById(id).value="";});
+  ["rdv-date","rdv-nom","rdv-adresse","rdv-ville","rdv-tel","rdv-mail","rdv-travaux","rdv-obs"].forEach(function(id){document.getElementById(id).value="";});
   RRDV();
 }
 
@@ -4180,7 +4184,7 @@ function RRDV(){
   var table=document.createElement("table");
   table.style.cssText="width:100%;border-collapse:collapse;font-size:12px";
   var thead=table.createTHead();var hr=thead.insertRow();
-  ["Date","Nom","Adresse","Téléphone","Email","Travaux","Observations","✅ Appelé","👁️ Lu (Quentin)","",""].forEach(function(h){
+  ["Date","Nom","Adresse","Ville","Téléphone","Email","Travaux","Observations","✅ Appelé","👁️ Lu (Quentin)","",""].forEach(function(h){
     var th=document.createElement("th");th.textContent=h;
     th.style.cssText="padding:8px 10px;text-align:left;background:#e2e8f0;border:1px solid var(--brd);font-size:11px;font-weight:600;white-space:nowrap";
     hr.appendChild(th);
@@ -4197,6 +4201,7 @@ function RRDV(){
       rdv.date?new Date(rdv.date).toLocaleDateString("fr-FR"):"—",
       rdv.nom,
       rdv.adresse||"—",
+      rdv.ville||"—",
       rdv.tel||"—",
       rdv.mail||"—",
       rdv.travaux||"—",
@@ -4282,6 +4287,7 @@ function editRDV(id){
   var fDate=mkRow("Date",Object.assign(document.createElement("input"),{type:"date",value:rdv.date||"",style:"flex:1;height:32px;border:1px solid #c5bfb5;border-radius:6px;padding:0 8px;font-size:12px;outline:none"}));
   var fNom=mkRow("Nom *",Object.assign(document.createElement("input"),{value:rdv.nom||"",maxLength:60,style:"flex:1;height:32px;border:1px solid #c5bfb5;border-radius:6px;padding:0 8px;font-size:12px;outline:none"}));
   var fAdr=mkRow("Adresse",Object.assign(document.createElement("input"),{value:rdv.adresse||"",maxLength:100,style:"flex:1;height:32px;border:1px solid #c5bfb5;border-radius:6px;padding:0 8px;font-size:12px;outline:none"}));
+  var fVille=mkRow("Ville",Object.assign(document.createElement("input"),{value:rdv.ville||"",maxLength:60,style:"flex:1;height:32px;border:1px solid #c5bfb5;border-radius:6px;padding:0 8px;font-size:12px;outline:none"}));
   var fTel=mkRow("Téléphone",Object.assign(document.createElement("input"),{value:rdv.tel||"",maxLength:20,style:"flex:1;height:32px;border:1px solid #c5bfb5;border-radius:6px;padding:0 8px;font-size:12px;outline:none"}));
   var fMail=mkRow("Email",Object.assign(document.createElement("input"),{value:rdv.mail||"",maxLength:80,style:"flex:1;height:32px;border:1px solid #c5bfb5;border-radius:6px;padding:0 8px;font-size:12px;outline:none"}));
   var fTrav=mkRow("Travaux",Object.assign(document.createElement("input"),{value:rdv.travaux||"",maxLength:120,style:"flex:1;height:32px;border:1px solid #c5bfb5;border-radius:6px;padding:0 8px;font-size:12px;outline:none"}));
@@ -4291,12 +4297,13 @@ function editRDV(id){
   var okBtn=document.createElement("button");okBtn.style.cssText="flex:1;height:36px;background:#1a1916;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer";okBtn.textContent="Enregistrer";
   okBtn.onclick=function(){
     if(!fNom.value.trim()){alert("Nom requis");return;}
-    rdv.date=fDate.value;rdv.nom=fNom.value.trim();rdv.adresse=fAdr.value.trim();
+    rdv.date=fDate.value;rdv.nom=fNom.value.trim();rdv.adresse=fAdr.value.trim();rdv.ville=fVille.value.trim();
     rdv.tel=fTel.value.trim();rdv.mail=fMail.value.trim();rdv.travaux=fTrav.value.trim();rdv.obs=fObs.value.trim();
     save();modal.remove();RRDV();
     var notifMsgEdit="✏️ Demande de RDV modifiée\n"
       +"👤 "+rdv.nom+"\n"
       +(rdv.date?"📅 "+new Date(rdv.date).toLocaleDateString("fr-FR")+"\n":"")
+      +(rdv.ville?"📍 "+rdv.ville+"\n":"")
       +(rdv.tel?"📱 "+rdv.tel+"\n":"")
       +(rdv.travaux?"🔧 "+rdv.travaux+"\n":"")
       +"\nVoir : https://accueil-eng.github.io/planning/";
