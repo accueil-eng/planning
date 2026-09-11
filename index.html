@@ -2991,15 +2991,19 @@ function printVehiculesEntretien(){
   h+="<img src='"+APP_LOGO_DATAURI+"' style='height:60px;margin-bottom:10px' alt='Logo'>";
   h+="<h1>🚐 Véhicules — Suivi entretien — Fonteneau Rénovation</h1>";
   h+="<h2>Imprimé le "+new Date().toLocaleDateString("fr-FR")+"</h2>";
-  h+="<table><thead><tr><th>N°</th><th>Immatriculation</th><th>Modèle</th><th>Dern. vidange</th><th>Prochaine vidange</th><th>Dern. CT</th><th>Prochain CT</th><th>Dern. anti-pol.</th><th>Prochain anti-pol.</th></tr></thead><tbody>";
+  h+="<table><thead><tr><th>N°</th><th>Immatriculation</th><th>Modèle</th><th>Dern. vidange</th><th>Prochaine vidange</th><th>Dern. CT</th><th>Prochain CT</th><th>Dern. anti-pol.</th><th>Prochain anti-pol.</th><th>📅 RDV pris</th></tr></thead><tbody>";
   var fmtD=function(d){return d?new Date(d).toLocaleDateString("fr-FR"):"—";};
+  var RLBLp={vidange:"Vidange",ct:"CT",antipol:"Anti-pol.",garage:"Garage",autre:"Autre"};
   D.vehicules.forEach(function(v){
     var nv=nD(v.vidange,12),nc=nD(v.ct,24),na=nD(v.antipol,12);
     var sv=vStat(nv),sc=vStat(nc),sa=vStat(na);
+    var rdvsTxt=(v.rdvs||[]).slice().sort(function(a,b){return (a.date||"").localeCompare(b.date||"");})
+      .map(function(r){return (RLBLp[r.type]||r.type)+" "+fmtD(r.date);}).join("<br>")||"—";
     h+="<tr><td><b>"+(v.num||"—")+"</b></td><td>"+(v.immat||"—")+"</td><td>"+(v.model||"—")+"</td>"
       +"<td>"+fmtD(v.vidange)+"</td><td class='"+sv.cls+"'>"+fmtD(nv)+" ("+sv.b+")</td>"
       +"<td>"+fmtD(v.ct)+"</td><td class='"+sc.cls+"'>"+fmtD(nc)+" ("+sc.b+")</td>"
-      +"<td>"+fmtD(v.antipol)+"</td><td class='"+sa.cls+"'>"+fmtD(na)+" ("+sa.b+")</td></tr>";
+      +"<td>"+fmtD(v.antipol)+"</td><td class='"+sa.cls+"'>"+fmtD(na)+" ("+sa.b+")</td>"
+      +"<td>"+rdvsTxt+"</td></tr>";
   });
   h+="</tbody></table>";
   h+="<p style='font-size:10px;color:#888;margin-top:20px'>Fonteneau Rénovation — Document généré automatiquement</p>";
