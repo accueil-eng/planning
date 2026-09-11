@@ -7834,7 +7834,15 @@ function renderPtValidationsList(){
   var wrap=document.getElementById("pt-validations-wrap");
   var banner=document.getElementById("ptvalidations-banner");
   if(!D.ptWeekValidations)D.ptWeekValidations={};
-  var entries=Object.keys(D.ptWeekValidations).map(function(k){return D.ptWeekValidations[k];}).sort(function(a,b){return a.ts-b.ts;});
+  if(!D.bureauWeekValidations)D.bureauWeekValidations={};
+  // On ne garde que les semaines pas encore traitées par le Bureau (ni validées, ni verrouillées).
+  var entries=Object.keys(D.ptWeekValidations).map(function(k){return D.ptWeekValidations[k];})
+    .filter(function(e){
+      var wkMois=getDatesOfWeek(e.semaine,e.annee)[0].getMonth()+1;
+      var alreadyDone=!!D.bureauWeekValidations[e.salId+"|"+e.semaine+"|"+e.annee]||isWeekLocked(e.salId,e.semaine,wkMois,e.annee);
+      return !alreadyDone;
+    })
+    .sort(function(a,b){return a.ts-b.ts;});
 
   // Mettre à jour la bannière visible depuis tous les onglets (Valérie uniquement)
   if(banner){
