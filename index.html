@@ -6973,9 +6973,16 @@ function RPOINTAGE(){
 
     var chIds=Object.keys(chantierMap);
     // Add button to add a chantier manually — sticky so it stays visible while scrolling horizontally
+    // Côté salarié : désactivé si au moins une semaine du mois est déjà validée par le Bureau.
+    var salWeekValidated=isSalMode&&weeks.some(function(w){return !!(D.bureauWeekValidations&&D.bureauWeekValidations[sal.id+"|"+w+"|"+annee]);});
     html+="<tr><td colspan='"+(2+weeks.length*6)+"' style='"+tdStyle()+"padding:0'>";
     var addBtnId="pt-add-btn-"+sal.id;
     html+="<div style='position:sticky;left:0;display:inline-flex;align-items:center;padding:4px 8px;background:#fff;z-index:2'>";
+    if(salWeekValidated){
+      html+="<span style='font-size:11px;color:#94a3b8;font-style:italic'>🔒 Ajout de chantier verrouillé (semaine validée par le Bureau)</span>";
+      html+="</div>";
+      html+="</td></tr>";
+    } else {
     html+="<select id='pt-add-ch-"+sal.id+"' style='height:26px;border:1px solid var(--brd2);border-radius:4px;font-size:11px;padding:0 4px;margin-right:6px'>";
     html+="<option value=''>+ Ajouter un chantier...</option>";
     var newChantiers=D.chantiers.filter(function(c){return !c.done&&!chantierMap[c.id];});
@@ -6993,6 +7000,7 @@ function RPOINTAGE(){
     html+="<button type='button' id='"+addBtnId+"' style='height:26px;padding:0 8px;background:#0891b2;color:#fff;border:none;border-radius:4px;font-size:11px;cursor:pointer'>Ajouter</button>";
     html+="</div>";
     html+="</td></tr>";
+    }
     // Store pending button bindings (attached after innerHTML is set)
     _ptAddBtnBindings.push({btnId:addBtnId,salId:sal.id,mois:mois,annee:annee});
 
