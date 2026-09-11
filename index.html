@@ -1035,7 +1035,7 @@ window.addEventListener("beforeunload",function(e){
 function buildPublicSnapshot(src){
   var S = src||D;
   var pubSalaries=(S.salaries||[]).map(function(s){
-    return {id:s.id,prenom:s.prenom,nom:s.nom,color:s.color,type:s.type,isBureau:s.isBureau,contratDebut:s.contratDebut,contratFin:s.contratFin};
+    return {id:s.id,prenom:s.prenom,nom:s.nom,color:s.color,type:s.type,isBureau:s.isBureau,contratDebut:s.contratDebut,contratFin:s.contratFin,excludeTrajetTransport:s.excludeTrajetTransport};
   });
   var pubChantiers=(S.chantiers||[]).map(function(c){
     return {id:c.id,ref:c.ref,nom:c.nom,adresse:c.adresse,color:c.color,done:c.done};
