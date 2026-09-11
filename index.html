@@ -7342,6 +7342,7 @@ function archiveOldPointages(){
 function lockValidatedWeeksInputs(salId,mois,annee){
   if(!salId)return;
   if(!D.ptWeekValidations)D.ptWeekValidations={};
+  if(!D.bureauWeekValidations)D.bureauWeekValidations={};
   if(!D.ptLocks)D.ptLocks={};
   var wrap=document.getElementById("pointage-wrap");
   if(!wrap)return;
@@ -7349,15 +7350,17 @@ function lockValidatedWeeksInputs(salId,mois,annee){
   inputs.forEach(function(inp){
     var p=inp.dataset.pt.split("|");
     var wk=p[4];var mo=p[0];var an=p[1];
-    var vKey=salId+"|"+wk+"|"+an;
+    var bureauKey=salId+"|"+wk+"|"+an;
+    var bureauValidated=!!D.bureauWeekValidations[bureauKey];
     var weekLocked=isWeekLocked(salId,wk,mo,an);
     // Ne pas désactiver les boutons unlock (ils permettent de déverrouiller)
     var isUnlockBtn=inp.id&&(inp.id.indexOf("cond-unlock")>=0||inp.id.indexOf("cond-clear")>=0||inp.id.indexOf("zone-clear")>=0);
-    var isCondCheckbox=(inp.type==="checkbox"&&inp.dataset.pt&&inp.dataset.pt.indexOf("conduite")>=0);
     // Si la semaine est en mode modification (ptModifications), ne pas verrouiller les zones
     var isModified=!!(D.ptModifications&&D.ptModifications[salId+"|"+wk+"|"+p[1]]);
     var isZoneEl=inp.dataset.pt&&inp.dataset.pt.indexOf("zone_dd")>=0;
-    if(!isUnlockBtn&&!(isModified&&isZoneEl)&&(D.ptWeekValidations[vKey]||weekLocked)){
+    // Le salarié peut continuer à modifier tant que le Bureau n'a pas validé (même s'il a déjà cliqué "Valider" de son côté).
+    // Seule une validation Bureau, ou un verrouillage explicite, bloque réellement la saisie.
+    if(!isUnlockBtn&&!(isModified&&isZoneEl)&&(bureauValidated||weekLocked)){
       inp.disabled=true;
       inp.style.opacity="1"; // valeur bien visible
       inp.style.cursor="not-allowed";
@@ -7365,7 +7368,7 @@ function lockValidatedWeeksInputs(salId,mois,annee){
       inp.style.borderColor="#86efac";
       inp.style.color="#166534";
       inp.style.fontWeight="600";
-      inp.title=weekLocked?"Semaine verrouillée par le Bureau":"Semaine validée";
+      inp.title=weekLocked?"Semaine verrouillée par le Bureau":"Semaine validée par le Bureau";
       // Masquer les boutons ✕ et ✓ dans la même cellule
       if(inp.parentNode){
         inp.parentNode.querySelectorAll("button").forEach(function(btn){
@@ -7431,6 +7434,7 @@ function validateBureauWeek(salId,semaine,annee){
 }
 
 function unvalidateBureauWeek(salId,semaine,annee){
+  if(_bureauIdentity!=="Valérie"){showToast("⚠️ Seule Valérie peut annuler une validation. Envoyez-lui un message si besoin.");return;}
   if(!D.bureauWeekValidations)D.bureauWeekValidations={};
   delete D.bureauWeekValidations[salId+"|"+semaine+"|"+annee];
   save();
@@ -7451,6 +7455,7 @@ function lockWeek(salId,semaine,mois,annee){
 }
 
 function unlockWeek(salId,semaine,mois,annee){
+  if(_bureauIdentity!=="Valérie"){showToast("⚠️ Seule Valérie peut déverrouiller une semaine validée. Envoyez-lui un message si besoin.");return;}
   if(!D.ptLocks)D.ptLocks={};
   if(!D.ptUnlockOverrides)D.ptUnlockOverrides={};
   var lockKey="ptLock|"+mois+"|"+annee+"|"+semaine+"|"+salId;
@@ -8242,6 +8247,7 @@ function togglePointageLock(){
   if(!D.ptLocks)D.ptLocks={};
   var isLocked=!!D.ptLocks[lockKey];
   if(isLocked){
+    if(_bureauIdentity!=="Valérie"){showToast("⚠️ Seule Valérie peut déverrouiller. Envoyez-lui un message si besoin.");return;}
     if(!confirm("Deverrouiller le pointage "+MOIS_NOM(mois)+" "+annee+" ? Les saisies redeviendront modifiables pour tous."))return;
     delete D.ptLocks[lockKey];
     showToast("🔓 Pointage déverrouillé !");
