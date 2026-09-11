@@ -7357,7 +7357,7 @@ function lockValidatedWeeksInputs(salId,mois,annee){
     // Si la semaine est en mode modification (ptModifications), ne pas verrouiller les zones
     var isModified=!!(D.ptModifications&&D.ptModifications[salId+"|"+wk+"|"+p[1]]);
     var isZoneEl=inp.dataset.pt&&inp.dataset.pt.indexOf("zone_dd")>=0;
-    if(!isUnlockBtn&&!isCondCheckbox&&!(isModified&&isZoneEl)&&(D.ptWeekValidations[vKey]||weekLocked)){
+    if(!isUnlockBtn&&!(isModified&&isZoneEl)&&(D.ptWeekValidations[vKey]||weekLocked)){
       inp.disabled=true;
       inp.style.opacity="1"; // valeur bien visible
       inp.style.cursor="not-allowed";
