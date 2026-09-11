@@ -8010,9 +8010,18 @@ function isPersoVehDay(salId,dt){
 
 function ptCondClear(mois,annee,salId,wk,di){
   // Efface complètement la valeur (bouton ✕)
+  var existingRaw=ptGet(mois,annee,"conduite",salId,wk,di);
+  if(existingRaw){
+    try{
+      var existingData=JSON.parse(existingRaw);
+      if(existingData.h){
+        if(!confirm("Effacer la valeur de conduite saisie ("+existingData.h+"h) ?"))return;
+      }
+    }catch(e){}
+  }
   ptSet(mois,annee,"conduite",salId,wk,di,"");
   _ptLastEditedKey=mois+"|"+annee+"|conduite|"+salId+"|"+wk+"|"+di;
-  RPOINTAGE();
+  RPOINTAGE_debounced();
 }
 
 function ptCondUnlock(mois,annee,salId,wk,di){
@@ -8064,7 +8073,7 @@ function ptCondSelect(sel){
   var mois=parseInt(p[0]),annee=parseInt(p[1]),salId=p[3],wk=parseInt(p[4]),di=parseInt(p[5]);
   if(!sel.value){
     ptSet(mois,annee,"conduite",salId,wk,di,"");
-    RPOINTAGE();
+    RPOINTAGE_debounced();
     return;
   }
   var chId=sel.value;
@@ -8074,7 +8083,7 @@ function ptCondSelect(sel){
   var h=ch?(siegeForSal==="fontevraud"?ch.condFontevraud:ch.condEcouflant):null;
   var data={chId:chId,h:h||0};
   ptSet(mois,annee,"conduite",salId,wk,di,JSON.stringify(data));
-  RPOINTAGE();
+  RPOINTAGE_debounced();
 }
 
 function ptRemoveChantierLine(salId,chId,mois,annee){
