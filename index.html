@@ -7502,7 +7502,7 @@ function renderValidateWeekButton(mois,annee,salId){
   weeks.forEach(function(wk){
     var vKey=salId+"|"+wk+"|"+annee;
     var bureauKey=salId+"|"+wk+"|"+annee;
-    var bureauValidated=!!(D.bureauWeekValidations&&D.bureauWeekValidations[bureauKey]);
+    var bureauValidated=!!(D.bureauWeekValidations&&D.bureauWeekValidations[bureauKey])||isWeekLocked(salId,wk,mois,annee);
     var locked=!!D.ptWeekValidations[vKey];
     var modified=!!(D.ptModifications&&D.ptModifications[salId+"|"+wk+"|"+annee]);
     var wkDates=getDatesOfWeek(wk,annee);
