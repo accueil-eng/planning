@@ -7037,12 +7037,13 @@ function RPOINTAGE(){
             wkT+=parseFloat(val)||0;
             var chCellKey=mois+"|"+annee+"|ch_"+chId+"|"+sal.id+"|"+wk+"|"+di;
             var chCellValidated=!!(D.chHoursValidated&&D.chHoursValidated[chCellKey]);
+            var chWeekBureauValidated=!!(D.bureauWeekValidations&&D.bureauWeekValidations[sal.id+"|"+wk+"|"+annee]);
             var hasVal=val!==""&&parseFloat(val)>0;
             html+="<td style='"+tdStyle()+"padding:1px;text-align:center;background:#eff6ff'>";
             html+="<div style='display:flex;align-items:center;justify-content:center;gap:2px'>";
             html+="<input type='number' value='"+(val||"")+"' min='0' step='0.5' style='width:40px;height:24px;border:1px solid "+(chCellValidated?"#16a34a":"#bae6fd")+";border-radius:3px;font-size:11px;text-align:center;padding:0 1px;outline:none;background:#eff6ff;color:"+(chCellValidated?"#16a34a":"#0891b2")+";font-weight:600'";
             html+=" data-pt='"+chCellKey+"' data-handler='ptNum'>";
-            if(hasVal&&!chCellValidated){
+            if(hasVal&&!chCellValidated&&!chWeekBureauValidated){
               html+="<button type='button' tabindex='-1' onclick=\"ptClearChHours('"+chCellKey+"')\" title='Effacer' style='width:14px;height:14px;border:none;border-radius:2px;background:#fee2e2;color:#dc2626;font-size:9px;line-height:14px;cursor:pointer;padding:0'>✕</button>";
               html+="<button type='button' tabindex='-1' onclick=\"ptValidateChHours('"+chCellKey+"')\" title='Valider' style='width:14px;height:14px;border:none;border-radius:2px;background:#dcfce7;color:#16a34a;font-size:9px;line-height:14px;cursor:pointer;padding:0'>✓</button>";
             }
@@ -7380,7 +7381,7 @@ function lockValidatedWeeksInputs(salId,mois,annee){
       // Masquer les boutons ✕ et ✓ dans la même cellule
       if(inp.parentNode){
         inp.parentNode.querySelectorAll("button").forEach(function(btn){
-          if(!btn.id||btn.id.indexOf("cond")<0)btn.style.display="none";
+          btn.style.display="none";
         });
       }
     }
