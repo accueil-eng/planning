@@ -1792,7 +1792,7 @@ function mkDepotCell(d){
   var asgn=asgVehs(d);
   var indIds={};
   Object.keys(D.vehIndispo).forEach(function(k){if(k.indexOf(CW+"|"+d+"|")===0)indIds[k.split("|")[2]]=1;});
-  var dvs=D.vehicules.filter(function(v){return !asgn[v.id]&&!indIds[v.id];});
+  var dvs=D.vehicules.filter(function(v){return !v.excludeFromPlanning&&!asgn[v.id]&&!indIds[v.id];});
   if(!dvs.length){var e=document.createElement("div");e.style.cssText="font-size:10px;color:var(--dim);padding:3px 5px";e.textContent="—";cc.appendChild(e);return cc;}
   dvs.forEach(function(veh){
     var vcs=vCS(veh);var vcls=vcs?vcs.worst:"none";
@@ -2169,7 +2169,7 @@ function openIndDD(di,anchor){
   var asgn=asgVehs(di);var alr={};
   Object.keys(D.vehIndispo).forEach(function(k){if(k.indexOf(CW+"|"+di+"|")===0)alr[k.split("|")[2]]=1;});
   var sel=document.getElementById("ind-veh");sel.innerHTML="";
-  D.vehicules.filter(function(v){return !alr[v.id];}).forEach(function(v){var o=document.createElement("option");o.value=v.id;o.textContent="🚐 "+(v.num?"N°"+v.num+" ":"")+(v.immat||v.model||"Veh")+(asgn[v.id]?" (affecté)":"");sel.appendChild(o);});
+  D.vehicules.filter(function(v){return !alr[v.id]&&!v.excludeFromPlanning;}).forEach(function(v){var o=document.createElement("option");o.value=v.id;o.textContent="🚐 "+(v.num?"N°"+v.num+" ":"")+(v.immat||v.model||"Veh")+(asgn[v.id]?" (affecté)":"");sel.appendChild(o);});
   document.getElementById("ind-note").value="";
   openDD("ind");posDD("ind",anchor);
 }
