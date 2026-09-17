@@ -6195,11 +6195,15 @@ function RBILAN(){
                 special[skey].bySalarie[sal.id].h+=h;
                 special[skey].byMonth[mo]=(special[skey].byMonth[mo]||0)+h;
               } else {
-                if(!bilan[ch.id])bilan[ch.id]={nom:(ch.ref?ch.ref+" - ":"")+ch.nom,color:ch.color,totalH:0,bySalarie:{},byMonth:{}};
+                if(!bilan[ch.id])bilan[ch.id]={nom:(ch.ref?ch.ref+" - ":"")+ch.nom,color:ch.color,totalH:0,bySalarie:{},byMonth:{},bySalarieByMonth:{}};
                 bilan[ch.id].totalH+=h;
                 if(!bilan[ch.id].bySalarie[sal.id])bilan[ch.id].bySalarie[sal.id]={nom:(sal.nom?sal.nom+" ":"")+sal.prenom,h:0};
                 bilan[ch.id].bySalarie[sal.id].h+=h;
                 bilan[ch.id].byMonth[mo]=(bilan[ch.id].byMonth[mo]||0)+h;
+                if(!bilan[ch.id].bySalarieByMonth)bilan[ch.id].bySalarieByMonth={};
+                if(!bilan[ch.id].bySalarieByMonth[mo])bilan[ch.id].bySalarieByMonth[mo]={};
+                if(!bilan[ch.id].bySalarieByMonth[mo][sal.id])bilan[ch.id].bySalarieByMonth[mo][sal.id]={nom:(sal.nom?sal.nom+" ":"")+sal.prenom,h:0};
+                bilan[ch.id].bySalarieByMonth[mo][sal.id].h+=h;
               }
               // Track interim/stagiaire/apprenti hours separately
               [["interim",isInterimSal],["stagiaire",isStagiaireSal],["apprenti",isApprentiSal]].forEach(function(pair){
@@ -6265,6 +6269,7 @@ function RBILAN(){
     }
   });
 
+  window._bilanDataRef={bilan:bilan,annee:annee};
   var chIds=Object.keys(bilan).sort(function(a,b){return bilan[b].totalH-bilan[a].totalH;});
   var specialIds=Object.keys(special).filter(function(k){return special[k].totalH>0;});
   var totalSpecialIds=specialIds.filter(function(k){return ["interim","stagiaire","apprenti"].indexOf(k)<0;}); // informational only, not added to grand total
@@ -6301,7 +6306,8 @@ function RBILAN(){
           "onclick='event.stopPropagation()' onchange='setBilanManual(\""+item._id+"\","+mm+","+annee+",this.value)'>"+
           "</td>";
       } else {
-        rowHtml+="<td style='border:1px solid #e2e8f0;padding:5px 6px;text-align:center;background:"+rowBg+";color:"+(mh>0?"#1a1916":"#cbd5e1")+"'>"+(mh>0?mh.toFixed(1):"\u2014")+"</td>";
+        var hasDetail=mh>0&&item.bySalarieByMonth&&item.bySalarieByMonth[mm];
+        rowHtml+="<td style='border:1px solid #e2e8f0;padding:5px 6px;text-align:center;background:"+rowBg+";color:"+(mh>0?"#1a1916":"#cbd5e1")+(hasDetail?";cursor:pointer;text-decoration:underline dotted":"")+"' "+(hasDetail?"onclick='event.stopPropagation();showBilanMonthDetail(\""+item._id+"\","+mm+",\""+item.nom.replace(/'/g,"&#39;")+"\")'":"")+" title='"+(hasDetail?"Cliquer pour voir le détail par salarié":"")+"'>"+(mh>0?mh.toFixed(1):"\u2014")+"</td>";
       }
     }
     rowHtml+="<td style='border:1px solid #e2e8f0;padding:5px 10px;text-align:center;font-weight:700;background:#ede9fe;color:#7c3aed'>"+item.totalH.toFixed(1)+"h</td>";
@@ -6384,6 +6390,42 @@ function RBILAN(){
   wrap.innerHTML=html;
 }
 
+// Affiche une bulle avec le détail des heures par salarié, pour un chantier et un mois donnés.
+function showBilanMonthDetail(chId,mois,chNom){
+  var existing=document.getElementById("bilan-month-detail-popup");if(existing)existing.remove();
+  var ref=window._bilanDataRef;
+  if(!ref||!ref.bilan[chId]||!ref.bilan[chId].bySalarieByMonth||!ref.bilan[chId].bySalarieByMonth[mois])return;
+  var detail=ref.bilan[chId].bySalarieByMonth[mois];
+  var MOIS_NOMS=["","Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+  var rows=Object.keys(detail).map(function(sid){return detail[sid];}).sort(function(a,b){return b.h-a.h;});
+  var total=rows.reduce(function(s,r){return s+r.h;},0);
+
+  var modal=document.createElement("div");modal.id="bilan-month-detail-popup";
+  modal.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:9999;display:flex;align-items:center;justify-content:center";
+  var box=document.createElement("div");
+  box.style.cssText="background:#fff;border-radius:12px;padding:20px;max-width:320px;width:90%;box-shadow:0 16px 48px rgba(0,0,0,.2);font-family:DM Sans,sans-serif;max-height:70vh;overflow-y:auto";
+  var title=document.createElement("div");
+  title.style.cssText="font-family:Syne,sans-serif;font-weight:800;font-size:14px;margin-bottom:2px;color:#1a1916";
+  title.textContent=chNom;
+  box.appendChild(title);
+  var sub=document.createElement("div");
+  sub.style.cssText="font-size:11px;color:#7a746c;margin-bottom:14px";
+  sub.textContent=MOIS_NOMS[mois]+" — "+total.toFixed(1)+"h au total";
+  box.appendChild(sub);
+  rows.forEach(function(r){
+    var row=document.createElement("div");
+    row.style.cssText="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f1f5f9;font-size:12px";
+    row.innerHTML="<span>"+r.nom+"</span><span style='font-weight:700;color:#1a1916'>"+r.h.toFixed(1)+"h</span>";
+    box.appendChild(row);
+  });
+  var closeBtn=document.createElement("button");
+  closeBtn.textContent="Fermer";
+  closeBtn.style.cssText="width:100%;height:34px;margin-top:14px;background:#1a1916;color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer";
+  closeBtn.onclick=function(){modal.remove();};
+  box.appendChild(closeBtn);
+  modal.appendChild(box);document.body.appendChild(modal);
+  modal.onclick=function(e){if(e.target===modal)modal.remove();};
+}
 function toggleBilanDetail(chId){
   var row=document.getElementById("bilan-detail-"+chId);
   if(row)row.style.display=row.style.display==="none"?"table-row":"none";
