@@ -5093,7 +5093,7 @@ function RGANTT(){
     tr.appendChild(tdD);
 
     var chS=ch.dateDebutPrev?new Date(ch.dateDebutPrev):null;
-    var chE=ch.dateFinPrev?new Date(ch.dateFinPrev):null;
+    var chE=ch.dateFinPrev?new Date(ch.dateFinPrev):(chS?endDate:null); // sans fin connue : s'étend jusqu'à la fin de la période affichée
     var chR=ch.dateDebut?new Date(ch.dateDebut):null;
 
     weeks.forEach(function(w){
