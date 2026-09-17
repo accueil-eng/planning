@@ -240,6 +240,7 @@ body.profile-salarie .tabs{display:none}
 <div id="ptvalidations-banner" onclick="TAB('pointage')" style="display:none;cursor:pointer;background:#f0fdf4;border-bottom:2px solid #86efac;color:#166534;font-size:13px;font-weight:600;padding:10px 16px;text-align:center"></div>
 <div id="ptmodifications-banner" onclick="TAB('pointage')" style="display:none;cursor:pointer;background:#fff1f2;border-bottom:2px solid #fca5a5;color:#dc2626;font-size:13px;font-weight:600;padding:10px 16px;text-align:center"></div>
 <div id="rdv-unread-banner" onclick="TAB('rdv')" style="display:none;cursor:pointer;background:#eff6ff;border-bottom:2px solid #93c5fd;color:#1e40af;font-size:13px;font-weight:600;padding:10px 16px;text-align:center"></div>
+<div id="visite-medicale-banner" style="display:none;cursor:pointer;background:#fce7f3;border-bottom:2px solid #db2777;color:#9d174d;font-size:13px;font-weight:600;padding:10px 16px;text-align:center"></div>
 
 <div class="pg on" id="pg-planning">
   <div class="ptool">
@@ -803,6 +804,7 @@ setInterval(function(){
   smartLoadFromCloud(function(){
     function afterAll(){
       RP();RC();RS();RA();RV();updateAbsDemandesDot();updatePointageDot();updateMsgDot();
+      renderVisiteMedicaleBanner();
       if(_currentProfile==="bureau"){
         renderPtValidationsList();
         renderPtModificationsList();
@@ -854,6 +856,11 @@ function loadMyPrivateData(cb){
       D.ptModifications=Object.assign({},D.ptModifications||{},mine.ptModifications||{});
       D.ptLocks=Object.assign({},D.ptLocks||{},mine.ptLocks||{});
       D.bureauWeekValidations=Object.assign({},D.bureauWeekValidations||{},mine.bureauWeekValidations||{});
+      // Visite médicale : donnée privée, patchée uniquement sur la propre fiche du salarié connecté.
+      if(mine.visitePrev!==undefined){
+        var mySal=D.salaries.find(function(s){return s.id===_salLockedId;});
+        if(mySal){mySal.visitePrev=mine.visitePrev;mySal.visitePrevHeure=mine.visitePrevHeure;}
+      }
     } else if(mine&&mine.error){
       console.log("Worker /me error:",mine.error);
     }
@@ -1945,7 +1952,7 @@ function mkChip(eid,ck,di,idx,all){
   else if(isDup){var ico=document.createElement("span");ico.className="cico";ico.title="Doublon";ico.textContent="⚠️";top.appendChild(ico);}
   if(isBday){var bico=document.createElement("span");bico.className="cico";bico.title="Joyeux anniversaire "+sal.prenom+" !";bico.textContent="🎂";top.appendChild(bico);}
   // Visite médicale programmée ce jour
-  if(sal.visitePrev){var vpDate=new Date(sal.visitePrev);var cellD=wd(CW)[di];if(vpDate.getDate()===cellD.getDate()&&vpDate.getMonth()===cellD.getMonth()&&vpDate.getFullYear()===cellD.getFullYear()){var vico=document.createElement("span");vico.className="cico";vico.title="Visite médicale programmée !";vico.textContent="RDV";vico.style.cssText="font-size:8px;font-weight:800;color:#db2777;background:#fce7f3;border:1px solid #db2777;border-radius:3px;padding:1px 3px;margin-left:2px";top.appendChild(vico);wrap.style.border="2px solid #db2777";wrap.style.background="#fce7f3";}}
+  if(sal.visitePrev){var vpDate=new Date(sal.visitePrev);var cellD=wd(CW)[di];if(vpDate.getDate()===cellD.getDate()&&vpDate.getMonth()===cellD.getMonth()&&vpDate.getFullYear()===cellD.getFullYear()){var vico=document.createElement("span");vico.className="cico";vico.title="Visite médicale programmée"+(sal.visitePrevHeure?" à "+sal.visitePrevHeure:"")+" !";vico.textContent="RDV"+(sal.visitePrevHeure?" "+sal.visitePrevHeure:"");vico.style.cssText="font-size:8px;font-weight:800;color:#db2777;background:#fce7f3;border:1px solid #db2777;border-radius:3px;padding:1px 3px;margin-left:2px";top.appendChild(vico);wrap.style.border="2px solid #db2777";wrap.style.background="#fce7f3";}}
   if(isLiv){var lico=document.createElement("span");lico.className="cico";lico.title="Aussi en livraison ce jour !";lico.textContent="🚚";top.appendChild(lico);}
   // Remove button
   var rm=document.createElement("button");rm.className="crm";rm.textContent="×";rm.title="Retirer du planning";
@@ -2321,6 +2328,7 @@ function editSal(id){
   var fDdn=mkRow("🎂 Date naissance",Object.assign(document.createElement("input"),{type:"date",value:sal.ddn||"",style:"flex:1;height:32px;border:1px solid #c5bfb5;border-radius:6px;padding:0 8px;font-size:12px;outline:none"}));
   var fVm=mkRow("🏥 Dernière visite",Object.assign(document.createElement("input"),{type:"date",value:sal.visite||"",style:"flex:1;height:32px;border:1px solid #c5bfb5;border-radius:6px;padding:0 8px;font-size:12px;outline:none"}));
   var fVmPrev=mkRow("📅 RDV visite prévu",Object.assign(document.createElement("input"),{type:"date",value:sal.visitePrev||"",style:"flex:1;height:32px;border:1px solid #0891b2;border-radius:6px;padding:0 8px;font-size:12px;outline:none"}));
+  var fVmHeure=mkRow("🕐 Heure du RDV",Object.assign(document.createElement("input"),{type:"time",value:sal.visitePrevHeure||"",style:"flex:1;height:32px;border:1px solid #0891b2;border-radius:6px;padding:0 8px;font-size:12px;outline:none"}));
 
   var fTaux=mkRow("💶 Taux horaire €/h",Object.assign(document.createElement("input"),{type:"number",value:sal.taux||"",min:0,step:"0.01",placeholder:"ex: 18.50",style:"flex:1;height:32px;border:1px solid #c5bfb5;border-radius:6px;padding:0 8px;font-size:12px;outline:none"}));
   var fType=mkRow("Type",Object.assign(document.createElement("select"),{style:"flex:1;height:32px;border:1px solid #c5bfb5;border-radius:6px;padding:0 8px;font-size:12px;outline:none"}));
@@ -2339,7 +2347,7 @@ function editSal(id){
     sal.whatsapp=fTel.value.trim().replace(/[^0-9]/g,"");
     sal.telType=fTelType.value;
     sal.telPerso=fTelPerso.value.trim().replace(/[^0-9]/g,"");
-    sal.ddn=fDdn.value;sal.visite=fVm.value;sal.visitePrev=fVmPrev.value;sal.type=fType.value;sal.isBureau=fBureau.checked;sal.excludeTrajetTransport=fNoTT.checked;
+    sal.ddn=fDdn.value;sal.visite=fVm.value;sal.visitePrev=fVmPrev.value;sal.visitePrevHeure=fVmHeure.value;sal.type=fType.value;sal.isBureau=fBureau.checked;sal.excludeTrajetTransport=fNoTT.checked;
     sal.contrat=fContrat.value;sal.contratDebut=fContratDebut.value;sal.contratFin=fContratFin.value;
     sal.taux=fTaux.value?parseFloat(fTaux.value):null;
     saveNow();modal.remove();RS();
@@ -3251,6 +3259,7 @@ function showModeChooser(ent){
         applyProfile("bureau");
         showToast("👤 Connecté : "+ent.displayName+" (Bureau)");
         setTimeout(renderRdvUnreadBanner,150);
+        setTimeout(renderVisiteMedicaleBanner,150);
       } else if(m.id==="analyse"){
         applyProfile("analyse");
         showToast("👤 Connecté : "+ent.displayName+" (Analyse)");
@@ -3260,6 +3269,7 @@ function showModeChooser(ent){
           loadMyPrivateData(function(){
             applyProfile("salarie");
             showToast("👤 Connecté : "+ent.displayName+" (Mon espace)");
+            setTimeout(renderVisiteMedicaleBanner,150);
           });
         });
       }
@@ -3670,6 +3680,7 @@ function showPinHashTool(){
           var salSel=document.getElementById("salarie-tab-select");
           if(salSel)salSel.value="pointage";
           RPOINTAGE();
+          renderVisiteMedicaleBanner();
         },200);
       });
     });
@@ -4310,6 +4321,33 @@ function RRDV(){
 
 // Bannière visible en haut de l'app quand il y a des demandes de RDV pas encore lues
 // par la personne actuellement connectée (Quentin, Vincent ou Valérie).
+// Bannière de rappel des visites médicales programmées dans les 7 prochains jours (disparaît une fois la date passée).
+// Côté Bureau : tous les salariés concernés. Côté salarié : uniquement son propre rendez-vous.
+function renderVisiteMedicaleBanner(){
+  var banner=document.getElementById("visite-medicale-banner");
+  if(!banner)return;
+  var today=new Date();today.setHours(0,0,0,0);
+  var inSevenDays=new Date(today.getTime()+7*24*60*60*1000);
+  var concerned=D.salaries.filter(function(s){
+    if(!s.visitePrev)return false;
+    var vd=new Date(s.visitePrev);vd.setHours(0,0,0,0);
+    if(vd<today||vd>inSevenDays)return false; // passé ou trop loin
+    if(_currentProfile==="salarie")return s.id===_salLockedId;
+    return true;
+  }).sort(function(a,b){return a.visitePrev.localeCompare(b.visitePrev);});
+
+  if(!concerned.length||(_currentProfile!=="bureau"&&_currentProfile!=="salarie")){
+    banner.style.display="none";
+    return;
+  }
+  var txt=concerned.map(function(s){
+    var vd=new Date(s.visitePrev);
+    var isToday=vd.toDateString()===today.toDateString();
+    return (isToday?"aujourd'hui":vd.toLocaleDateString("fr-FR"))+(s.visitePrevHeure?" à "+s.visitePrevHeure:"")+(_currentProfile==="bureau"?" — "+s.prenom+(s.nom?" "+s.nom:""):"");
+  }).join(" · ");
+  banner.textContent="🩺 Visite médicale à venir : "+txt;
+  banner.style.display="block";
+}
 function renderRdvUnreadBanner(){
   var banner=document.getElementById("rdv-unread-banner");
   if(!banner)return;
