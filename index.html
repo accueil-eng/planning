@@ -6183,7 +6183,7 @@ function RBILAN(){
               var assigned=getChantierHoursPerDay(sal.id,dt).find(function(e){return e.chId===ch.id;});
               if(assigned)h=assigned.hours;
               // Bureau auto-default for isBureau salariés (same logic as Pointage display)
-              if(!h&&ch.ref==="9200"&&sal.isBureau&&di<5&&!getAbsenceForDay(sal.id,dt)){
+              if(!h&&ch.ref==="9200"&&sal.isBureau&&di<5&&!getAbsenceForDay(sal.id,dt)&&!isDateOutOfContract(sal.id,dt)){
                 h=di===4?7:7.5;
               }
             }
@@ -6406,7 +6406,7 @@ function exportBilanCSV(){
             if(!raw){
               var assigned=getChantierHoursPerDay(sal.id,dt).find(function(e){return e.chId===ch.id;});
               if(assigned)h=assigned.hours;
-              if(!h&&ch.ref==="9200"&&sal.isBureau&&di<5&&!getAbsenceForDay(sal.id,dt)){h=di===4?7:7.5;}
+              if(!h&&ch.ref==="9200"&&sal.isBureau&&di<5&&!getAbsenceForDay(sal.id,dt)&&!isDateOutOfContract(sal.id,dt)){h=di===4?7:7.5;}
             }
             if(h>0){
               if(!bilan[ch.id])bilan[ch.id]={nom:(ch.ref?ch.ref+" - ":"")+ch.nom,totalH:0,byMonth:{}};
