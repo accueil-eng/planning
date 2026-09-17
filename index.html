@@ -6188,8 +6188,8 @@ function RBILAN(){
               }
             }
             if(h>0){
-              if(ch.ref==="9200"||ch.ref==="9300"){
-                var skey=ch.ref==="9200"?"bureau":"depot";
+              if(ch.ref==="9200"||ch.ref==="9300"||sal.forceHeuresBureau){
+                var skey=(sal.forceHeuresBureau&&ch.ref!=="9300")?"bureau":(ch.ref==="9200"?"bureau":"depot");
                 special[skey].totalH+=h;
                 if(!special[skey].bySalarie[sal.id])special[skey].bySalarie[sal.id]={nom:(sal.nom?sal.nom+" ":"")+sal.prenom,h:0};
                 special[skey].bySalarie[sal.id].h+=h;
