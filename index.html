@@ -7058,7 +7058,7 @@ function RPOINTAGE(){
     var chIds=Object.keys(chantierMap);
     // Add button to add a chantier manually — sticky so it stays visible while scrolling horizontally
     // Côté salarié : désactivé si au moins une semaine du mois est déjà validée par le Bureau.
-    var salWeekValidated=isSalMode&&weeks.some(function(w){return !!(D.bureauWeekValidations&&D.bureauWeekValidations[sal.id+"|"+w+"|"+annee]);});
+    var salWeekValidated=isSalMode&&weeks.length>0&&weeks.every(function(w){return !!(D.bureauWeekValidations&&D.bureauWeekValidations[sal.id+"|"+w+"|"+annee])||isWeekLocked(sal.id,w,mois,annee);});
     html+="<tr><td colspan='"+(2+weeks.length*6)+"' style='"+tdStyle()+"padding:0'>";
     var addBtnId="pt-add-btn-"+sal.id;
     html+="<div style='position:sticky;left:0;display:inline-flex;align-items:center;padding:4px 8px;background:#fff;z-index:2'>";
@@ -8238,9 +8238,11 @@ function ptAddChantier(salId,mois,annee){
   if(!ch){showToast("⚠️ Chantier introuvable");return;}
   // Add explicit entry to make it appear even if already in planning
   var weeks=getWeeksOfMonth(mois,annee);
-  // Find first day actually IN the month to store the entry (weeks[0] day 0 may be in previous month)
+  // Find first day actually IN the month, dans une semaine non verrouillée/validée (weeks[0] day 0 may be in previous month)
   var stored=false;
   for(var wi=0;wi<weeks.length&&!stored;wi++){
+    var wkLockedOrValidated=!!(D.bureauWeekValidations&&D.bureauWeekValidations[salId+"|"+weeks[wi]+"|"+annee])||isWeekLocked(salId,weeks[wi],mois,annee);
+    if(wkLockedOrValidated)continue;
     var dts=getDatesOfWeek(weeks[wi],annee);
     for(var di2=0;di2<dts.length&&!stored;di2++){
       var dt2=dts[di2];
@@ -8250,6 +8252,7 @@ function ptAddChantier(salId,mois,annee){
       }
     }
   }
+  if(!stored){showToast("⚠️ Toutes les semaines de ce mois sont verrouillées.");return;}
   sel.value=""; // reset select after adding
   showToast("✅ Ligne "+ch.nom+" ajoutée !");
   RPOINTAGE();
