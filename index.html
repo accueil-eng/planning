@@ -237,8 +237,8 @@ body.profile-salarie .tabs{display:none}
 </header>
 
 <div id="absdemandes-banner" onclick="TAB('absences')" style="display:none;cursor:pointer;background:#fffbeb;border-bottom:1px solid #fde68a;color:#92400e;font-size:13px;font-weight:600;padding:10px 16px;text-align:center"></div>
-<div id="ptvalidations-banner" onclick="TAB('pointage')" style="display:none;cursor:pointer;background:#f0fdf4;border-bottom:2px solid #86efac;color:#166534;font-size:13px;font-weight:600;padding:10px 16px;text-align:center"></div>
-<div id="ptmodifications-banner" onclick="TAB('pointage')" style="display:none;cursor:pointer;background:#fff1f2;border-bottom:2px solid #fca5a5;color:#dc2626;font-size:13px;font-weight:600;padding:10px 16px;text-align:center"></div>
+<div id="ptvalidations-banner" onclick="scrollToPtValidationsList()" style="display:none;cursor:pointer;background:#f0fdf4;border-bottom:2px solid #86efac;color:#166534;font-size:13px;font-weight:600;padding:10px 16px;text-align:center"></div>
+<div id="ptmodifications-banner" onclick="scrollToPtValidationsList()" style="display:none;cursor:pointer;background:#fff1f2;border-bottom:2px solid #fca5a5;color:#dc2626;font-size:13px;font-weight:600;padding:10px 16px;text-align:center"></div>
 <div id="rdv-unread-banner" onclick="TAB('rdv')" style="display:none;cursor:pointer;background:#eff6ff;border-bottom:2px solid #93c5fd;color:#1e40af;font-size:13px;font-weight:600;padding:10px 16px;text-align:center"></div>
 <div id="visite-medicale-banner" style="display:none;cursor:pointer;background:#fce7f3;border-bottom:2px solid #db2777;color:#9d174d;font-size:13px;font-weight:600;padding:10px 16px;text-align:center"></div>
 
@@ -7903,6 +7903,20 @@ function renderPtModificationsList(){
   banner.style.display="block";
 }
 
+// Bascule sur l'onglet Pointage (si besoin) puis fait défiler jusqu'à la liste des validations/modifications
+// à traiter, avec un léger effet de surbrillance — pour qu'un clic sur la bannière ait toujours un effet visible,
+// même si on est déjà sur cet onglet.
+function scrollToPtValidationsList(){
+  if(_currentProfile==="bureau")TAB("pointage");
+  setTimeout(function(){
+    var wrap=document.getElementById("pt-validations-wrap");
+    if(!wrap)return;
+    wrap.scrollIntoView({behavior:"smooth",block:"center"});
+    wrap.style.transition="box-shadow .2s";
+    wrap.style.boxShadow="0 0 0 3px #fca5a5";
+    setTimeout(function(){wrap.style.boxShadow="none";},1500);
+  },150);
+}
 function dismissPtModification(key){
   if(!D.ptModifications)D.ptModifications={};
   delete D.ptModifications[key];
