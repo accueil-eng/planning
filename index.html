@@ -3188,8 +3188,8 @@ var PROFILES = {
       {name:"Quentin", pin:"82c7725c70dc3411afd70bb4253a3a208a9961844f39ad219b07710b7bcafc84", excludeTabs:["salaries"]},
       {name:"Vincent", pin:"db2e7f1bd5ab9968ae76199b7cc74795ca7404d5a08d78567715ce532f9d2669", excludeTabs:["salaries","rdv"]},
       {name:"Valérie", pin:"e8151b2c92fd188cec72b573a289fefc9d06d3116ba4eb2c8a8719ebf15c1270", selfSalId:"sal_1781699849993"}
-    ], color: "#db2777", tabs: ["planning","rdv","chantiers","salaries","absences","vehicules","formation","pointage","indemnites","urgences","messages"], readOnly: false },
-  analyse: { name: "Analyse", pin: "e8151b2c92fd188cec72b573a289fefc9d06d3116ba4eb2c8a8719ebf15c1270", color: "#0891b2", tabs: ["gantt","bilan","rttrecap"], readOnly: false },
+    ], color: "#db2777", tabs: ["planning","gantt","rdv","chantiers","salaries","absences","vehicules","formation","pointage","indemnites","urgences","messages"], readOnly: false },
+  analyse: { name: "Analyse", pin: "e8151b2c92fd188cec72b573a289fefc9d06d3116ba4eb2c8a8719ebf15c1270", color: "#0891b2", tabs: ["bilan","rttrecap"], readOnly: false },
   salarie: { name: "Salarié", pin: null, color: "#16a34a", tabs: ["planning","absdemande","pointage","monrtt","urgences","messages"], readOnly: true },
   planningpublic: { name: "Planning (lecture seule)", pin: null, color: "#0891b2", tabs: ["planning"], readOnly: true }
 };
@@ -3244,7 +3244,7 @@ function showModeChooser(ent){
 
   var modes=[
     {id:"bureau",icon:"🏢",label:"Bureau",desc:"Accès complet · Tout modifiable",color:"#db2777"},
-    {id:"analyse",icon:"📊",label:"Analyse",desc:"Prévisionnel · Bilans",color:"#0891b2"},
+    {id:"analyse",icon:"📊",label:"Analyse",desc:"Bilans · Récap RTT",color:"#0891b2"},
   ];
   if(ent.selfSalId)modes.push({id:"salarie-self",icon:"👷",label:"Mon espace salarié",desc:"Mon planning · Pointage · Absences",color:"#16a34a"});
 
