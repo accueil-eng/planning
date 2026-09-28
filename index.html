@@ -4278,24 +4278,23 @@ function RRDV(){
       td.style.cssText="padding:8px 10px;border:1px solid var(--brd);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap";
       td.textContent=txt;td.title=txt;
     });
-    // Appelé — coché par Quentin ou Vincent, on retient qui a appelé
+    // Appelé — assignation explicite : qui suit ce projet (Quentin ou Vincent)
     var tdCb=tr.insertCell();tdCb.style.cssText="padding:8px 10px;border:1px solid var(--brd);text-align:center";
-    if(_currentProfile==="bureau"&&(_bureauIdentity==="Quentin"||_bureauIdentity==="Vincent")){
-      var cb=document.createElement("input");cb.type="checkbox";cb.checked=rdv.appele||false;
-      cb.style.cssText="width:16px;height:16px;cursor:pointer;accent-color:#16a34a";
-      cb.title=rdv.appele&&rdv.appeleBy?"Appelé par "+rdv.appeleBy:"Marquer comme appelé";
-      cb.onchange=(function(rid){return function(){
+    if(_currentProfile==="bureau"){
+      var selApp=document.createElement("select");
+      selApp.style.cssText="font-size:11px;padding:2px 4px;border-radius:4px;border:1px solid var(--brd)";
+      [["","— Non appelé —"],["Quentin","Quentin"],["Vincent","Vincent"]].forEach(function(opt){
+        var o=document.createElement("option");o.value=opt[0];o.textContent=opt[1];
+        if((rdv.appeleBy||"")===opt[0])o.selected=true;
+        selApp.appendChild(o);
+      });
+      selApp.onchange=(function(rid){return function(){
         var r=D.rdvs.find(function(x){return x.id===rid;});
-        if(r){r.appele=this.checked;r.appeleBy=this.checked?_bureauIdentity:null;}save();RRDV();
+        if(r){r.appeleBy=this.value||null;r.appele=!!this.value;}save();RRDV();
       };})(rdv.id);
-      tdCb.appendChild(cb);
-      if(rdv.appele&&rdv.appeleBy){
-        var byLbl=document.createElement("div");byLbl.style.cssText="font-size:9px;color:var(--muted)";byLbl.textContent=rdv.appeleBy;
-        tdCb.appendChild(byLbl);
-      }
+      tdCb.appendChild(selApp);
     } else {
-      tdCb.textContent=rdv.appele?"✅":"⬜";
-      tdCb.title=rdv.appele&&rdv.appeleBy?"Appelé par "+rdv.appeleBy:(rdv.appele?"Appelé":"Pas encore appelé");
+      tdCb.textContent=rdv.appele&&rdv.appeleBy?rdv.appeleBy:"—";
     }
     // Lu par Quentin et Lu par Vincent — chacun coche sa propre case, lecture seule pour les autres
     [{key:"Quentin"},{key:"Vincent"}].forEach(function(who){
