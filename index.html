@@ -4250,7 +4250,7 @@ function RRDV(){
   var table=document.createElement("table");
   table.style.cssText="width:100%;border-collapse:collapse;font-size:12px";
   var thead=table.createTHead();var hr=thead.insertRow();
-  ["Date","Nom","Adresse","Ville","Téléphone","Email","Travaux","Observations","✅ Appelé","👁️ Lu (Quentin)","",""].forEach(function(h){
+  ["Date","Nom","Adresse","Ville","Téléphone","Email","Travaux","Observations","✅ Appelé","👁️ Lu (Quentin)","👁️ Lu (Vincent)","",""].forEach(function(h){
     var th=document.createElement("th");th.textContent=h;
     th.style.cssText="padding:8px 10px;text-align:left;background:#e2e8f0;border:1px solid var(--brd);font-size:11px;font-weight:600;white-space:nowrap";
     hr.appendChild(th);
@@ -4278,33 +4278,45 @@ function RRDV(){
       td.style.cssText="padding:8px 10px;border:1px solid var(--brd);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap";
       td.textContent=txt;td.title=txt;
     });
-    // Appelé checkbox
+    // Appelé — coché par Quentin ou Vincent, on retient qui a appelé
     var tdCb=tr.insertCell();tdCb.style.cssText="padding:8px 10px;border:1px solid var(--brd);text-align:center";
-    var cb=document.createElement("input");cb.type="checkbox";cb.checked=rdv.appele||false;
-    cb.style.cssText="width:16px;height:16px;cursor:pointer;accent-color:#16a34a";
-    cb.onchange=(function(rid){return function(){
-      var r=D.rdvs.find(function(x){return x.id===rid;});
-      if(r){r.appele=this.checked;}save();RRDV();
-    };})(rdv.id);
-    tdCb.appendChild(cb);
-    // Lu par Quentin — coché uniquement par Quentin, visible (lecture seule) par les autres
-    var tdLu=tr.insertCell();tdLu.style.cssText="padding:8px 10px;border:1px solid var(--brd);text-align:center";
-    if(_currentProfile==="bureau"&&_bureauIdentity==="Quentin"){
-      var cbLu=document.createElement("input");cbLu.type="checkbox";cbLu.checked=!!rdv.readBy.Quentin;
-      cbLu.title=cbLu.checked?"Lu par Quentin":"Marquer comme lu";
-      cbLu.style.cssText="width:16px;height:16px;cursor:pointer;accent-color:#2563eb";
-      cbLu.onchange=(function(rid){return function(){
+    if(_currentProfile==="bureau"&&(_bureauIdentity==="Quentin"||_bureauIdentity==="Vincent")){
+      var cb=document.createElement("input");cb.type="checkbox";cb.checked=rdv.appele||false;
+      cb.style.cssText="width:16px;height:16px;cursor:pointer;accent-color:#16a34a";
+      cb.title=rdv.appele&&rdv.appeleBy?"Appelé par "+rdv.appeleBy:"Marquer comme appelé";
+      cb.onchange=(function(rid){return function(){
         var r=D.rdvs.find(function(x){return x.id===rid;});
-        if(r){if(!r.readBy)r.readBy={};r.readBy.Quentin=this.checked;}
-        save();RRDV();
+        if(r){r.appele=this.checked;r.appeleBy=this.checked?_bureauIdentity:null;}save();RRDV();
       };})(rdv.id);
-      tdLu.appendChild(cbLu);
-    } else if(_currentProfile==="bureau"){
-      tdLu.textContent=rdv.readBy.Quentin?"✅":"⬜";
-      tdLu.title=rdv.readBy.Quentin?"Lu par Quentin":"Pas encore lu par Quentin";
+      tdCb.appendChild(cb);
+      if(rdv.appele&&rdv.appeleBy){
+        var byLbl=document.createElement("div");byLbl.style.cssText="font-size:9px;color:var(--muted)";byLbl.textContent=rdv.appeleBy;
+        tdCb.appendChild(byLbl);
+      }
     } else {
-      tdLu.textContent="—";
+      tdCb.textContent=rdv.appele?"✅":"⬜";
+      tdCb.title=rdv.appele&&rdv.appeleBy?"Appelé par "+rdv.appeleBy:(rdv.appele?"Appelé":"Pas encore appelé");
     }
+    // Lu par Quentin et Lu par Vincent — chacun coche sa propre case, lecture seule pour les autres
+    [{key:"Quentin"},{key:"Vincent"}].forEach(function(who){
+      var tdLu=tr.insertCell();tdLu.style.cssText="padding:8px 10px;border:1px solid var(--brd);text-align:center";
+      if(_currentProfile==="bureau"&&_bureauIdentity===who.key){
+        var cbLu=document.createElement("input");cbLu.type="checkbox";cbLu.checked=!!rdv.readBy[who.key];
+        cbLu.title=cbLu.checked?"Lu par "+who.key:"Marquer comme lu";
+        cbLu.style.cssText="width:16px;height:16px;cursor:pointer;accent-color:#2563eb";
+        cbLu.onchange=(function(rid,whoKey){return function(){
+          var r=D.rdvs.find(function(x){return x.id===rid;});
+          if(r){if(!r.readBy)r.readBy={};r.readBy[whoKey]=this.checked;}
+          save();RRDV();
+        };})(rdv.id,who.key);
+        tdLu.appendChild(cbLu);
+      } else if(_currentProfile==="bureau"){
+        tdLu.textContent=rdv.readBy[who.key]?"✅":"⬜";
+        tdLu.title=rdv.readBy[who.key]?"Lu par "+who.key:"Pas encore lu par "+who.key;
+      } else {
+        tdLu.textContent="—";
+      }
+    });
     // Edit
     var tdEdit=tr.insertCell();tdEdit.style.cssText="padding:8px 10px;border:1px solid var(--brd);text-align:center";
     var eb=document.createElement("button");eb.className="btn";eb.style.cssText="font-size:11px;padding:2px 8px";eb.textContent="✏️";
