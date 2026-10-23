@@ -6690,6 +6690,8 @@ function absHoursForDay(abs, dt){
 function fillPointageForAbsence(salId,mois,annee,wk,di,abs){
   var ptRow=ABS_TO_PT[abs.type];
   if(!ptRow)return;
+  // Un jour férié n'est jamais décompté en RTT
+  if(abs.type==="rtt"){var dtF=getDatesOfWeek(wk,annee)[di];if(dtF&&isFerie(dtF))return;}
   var hours=absHoursForDay(abs);
   var k=ptKey(mois,annee,ptRow,salId,wk,di);
   // Ne remplace que si la case est vide (respecte une saisie manuelle existante)
