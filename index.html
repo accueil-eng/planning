@@ -1763,6 +1763,25 @@ function RP(){
   addSpecRow(tbody,"🏠 Dépôt","depot-l","depot",mkDepotCell);
   addSpecRow(tbody,"🔧 Indisponibles","ind-l","ind",mkIndCell);
   tbl.appendChild(tbody);
+  // Jours fériés : colonne grisée, libellé dans l'en-tête, aucune affectation possible
+  dates.forEach(function(dt,i){
+    if(!isFerie(dt))return;
+    var lbl=getFerrieLabel(dt)||"Férié";
+    var th=trh.children[i+1];
+    if(th){
+      th.style.background="#cbd5e1";th.style.color="#475569";
+      var inner=th.querySelector(".th-day-inner");
+      if(inner){var tag=document.createElement("div");tag.style.cssText="font-size:10px;font-weight:700;margin-top:2px";tag.textContent="🎌 "+lbl;inner.appendChild(tag);}
+    }
+    Array.prototype.forEach.call(tbody.rows,function(row){
+      var td=row.cells[i+1];
+      if(!td)return;
+      td.style.background="repeating-linear-gradient(135deg,#e2e8f0,#e2e8f0 6px,#f1f5f9 6px,#f1f5f9 12px)";
+      td.style.opacity=".55";
+      td.style.pointerEvents="none";
+      td.title="Jour férié — "+lbl;
+    });
+  });
 }
 function addSpecRow(tbody,label,lcls,scls,cellFn){
   var tr=document.createElement("tr");
