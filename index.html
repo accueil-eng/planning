@@ -806,7 +806,7 @@ function smartLoadFromCloud(cb){
   _lastCloudLoad=now;
   loadForCurrentProfile(cb);
 }
-setInterval(function(){
+function _periodicRefresh(){
   smartLoadFromCloud(function(){
     function afterAll(){
       RP();RC();RS();RA();RV();updateAbsDemandesDot();updatePointageDot();updateMsgDot();
@@ -824,7 +824,18 @@ setInterval(function(){
     if(_currentProfile==="salarie"){ loadMyPrivateData(afterAll); }
     else { afterAll(); }
   });
-}, 30000);
+}
+setInterval(_periodicRefresh,30000);
+// iPhone/Safari met la page en pause (écran verrouillé, changement d'app) et les minuteurs ne repartent pas :
+// on actualise immédiatement dès que l'application redevient visible ou que le réseau revient.
+function _refreshOnReturn(){
+  if(document.visibilityState&&document.visibilityState!=="visible")return;
+  _lastCloudLoad=0;
+  _periodicRefresh();
+}
+document.addEventListener("visibilitychange",_refreshOnReturn);
+window.addEventListener("pageshow",function(e){if(e.persisted)_refreshOnReturn();});
+window.addEventListener("online",_refreshOnReturn);
 
 // Fast sync every 15s only when Messages tab is open
 setInterval(function(){
@@ -849,7 +860,7 @@ setInterval(function(){
 // connecté (messages, pointages, RTT, demandes d'absence) — jamais celles des autres.
 function loadMyPrivateData(cb){
   if(!_salLockedId){ if(cb)cb(); return; }
-  fetch(WORKER_API+"/me?sal="+encodeURIComponent(_salLockedId)+"&t="+Date.now())
+  fetch(WORKER_API+"/me?sal="+encodeURIComponent(_salLockedId)+"&t="+Date.now(),{cache:"no-store"})
   .then(function(r){ return r.json(); })
   .then(function(mine){
     if(mine&&!mine.error){
@@ -904,7 +915,7 @@ function syncMyPrivateData(){
 }
 function loadPublicPlanning(cb){
   var url="https://raw.githubusercontent.com/"+PUB_GH_REPO+"/main/"+PUB_GH_FILE+"?t="+Date.now();
-  fetch(url)
+  fetch(url,{cache:"no-store"})
   .then(function(r){ if(!r.ok){ if(cb)cb(); return null; } return r.json(); })
   .then(function(pub){
     if(!pub){ if(cb)cb(); return; }
