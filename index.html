@@ -6860,7 +6860,7 @@ function RPOINTAGE(){
 
     // Header
     html+="<tr>";
-    html+="<th style='"+thStyle()+"min-width:170px;text-align:left;position:sticky;left:0;"+(isSalMode?"top:0;height:30px;":"")+"z-index:4;background:#e2e8f0;box-shadow:2px 0 4px rgba(0,0,0,.08)'>Rubrique</th>";
+    html+="<th style='"+thStyle()+"min-width:170px;text-align:left;"+(isSalMode?"position:sticky;top:0;height:30px;z-index:3;":"position:sticky;left:0;z-index:4;box-shadow:2px 0 4px rgba(0,0,0,.08);")+"background:#e2e8f0'>Rubrique</th>";
     html+="<th style='"+thStyle()+stkTop+"width:70px;background:#dbeafe'>Mois</th>";
     weeks.forEach(function(wk){
       var dates=getDatesOfWeek(wk,annee);
@@ -6884,7 +6884,7 @@ function RPOINTAGE(){
 
     // Sub-header: dates
     html+="<tr>";
-    html+="<th style='"+thStyle()+(isSalMode?"position:sticky;left:0;top:30px;z-index:4;":"")+"'></th>";
+    html+="<th style='"+thStyle()+(isSalMode?"position:sticky;top:30px;z-index:3;":"")+"'></th>";
     html+="<th style='"+thStyle()+stkTop2+"background:#dbeafe'></th>";
     weeks.forEach(function(wk){
       var dates=getDatesOfWeek(wk,annee);
@@ -6901,7 +6901,7 @@ function RPOINTAGE(){
     // Rows
     PT_ROWS.forEach(function(row){
       html+="<tr>";
-      html+="<td style='"+tdStyle()+"font-weight:500;white-space:nowrap;background:#f8f7f4;position:sticky;left:0;z-index:2;box-shadow:2px 0 4px rgba(0,0,0,.08)'>"+row.label+(row.unit?" ("+row.unit+")":"")+"</td>";
+      html+="<td style='"+tdStyle()+"font-weight:500;white-space:nowrap;background:#f8f7f4;"+(isSalMode?"":"position:sticky;left:0;z-index:2;box-shadow:2px 0 4px rgba(0,0,0,.08)")+"'>"+row.label+(row.unit?" ("+row.unit+")":"")+"</td>";
 
       // Mois total
       var totalMois=0;
@@ -7192,7 +7192,7 @@ function RPOINTAGE(){
       chIds.forEach(function(chId){
         var ch=chantierMap[chId];
         html+="<tr style='background:#f0f9ff'>";
-        html+="<td style='"+tdStyle()+"font-weight:500;white-space:nowrap;background:#dbeafe;padding-left:14px;position:sticky;left:0;z-index:2;box-shadow:2px 0 4px rgba(0,0,0,.08)'><div style='display:flex;align-items:center;gap:6px'><span style='flex:1;overflow:hidden;text-overflow:ellipsis'>"+ch.nom+"</span>"+(isSalMode?"":"<button type='button' tabindex='-1' onclick=\"ptRemoveChantierLine('"+sal.id+"','"+chId+"',"+mois+","+annee+")\" title='Supprimer cette ligne chantier' style='width:16px;height:16px;border:none;border-radius:3px;background:#fee2e2;color:#dc2626;font-size:10px;line-height:16px;cursor:pointer;padding:0;flex-shrink:0'>✕</button>")+"</div></td>";
+        html+="<td style='"+tdStyle()+"font-weight:500;white-space:nowrap;background:#dbeafe;padding-left:14px;"+(isSalMode?"":"position:sticky;left:0;z-index:2;box-shadow:2px 0 4px rgba(0,0,0,.08)")+"'><div style='display:flex;align-items:center;gap:6px'><span style='flex:1;overflow:hidden;text-overflow:ellipsis'>"+ch.nom+"</span>"+(isSalMode?"":"<button type='button' tabindex='-1' onclick=\"ptRemoveChantierLine('"+sal.id+"','"+chId+"',"+mois+","+annee+")\" title='Supprimer cette ligne chantier' style='width:16px;height:16px;border:none;border-radius:3px;background:#fee2e2;color:#dc2626;font-size:10px;line-height:16px;cursor:pointer;padding:0;flex-shrink:0'>✕</button>")+"</div></td>";
         // Total mois (calculated from inputs)
         var chTotal=0;
         weeks.forEach(function(wk){
@@ -7239,7 +7239,7 @@ function RPOINTAGE(){
 
       // Total chantiers row
       html+="<tr style='background:#dbeafe'>";
-      html+="<td style='"+tdStyle()+"font-weight:700;position:sticky;left:0;z-index:2;background:#dbeafe;box-shadow:2px 0 4px rgba(0,0,0,.08)'>TOTAL chantiers</td>";
+      html+="<td style='"+tdStyle()+"font-weight:700;"+(isSalMode?"":"position:sticky;left:0;z-index:2;box-shadow:2px 0 4px rgba(0,0,0,.08);")+"background:#dbeafe'>TOTAL chantiers</td>";
       var grandCh=0;
       weeks.forEach(function(wk){
         getDatesOfWeek(wk,annee).forEach(function(dt,di){
