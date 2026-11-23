@@ -2640,10 +2640,14 @@ function confirmGroupAbs(){
   if(!checked.length){alert("Sélectionnez au moins un salarié.");return;}
   if(!debut){alert("Veuillez indiquer une date de début.");return;}
   if(debut>fin){alert("Date fin après début.");return;}
+  var _grpCreated=[];
   checked.forEach(function(salId){
-    D.absences.push({id:"abs_"+Date.now()+"_"+salId,salId:salId,debut:debut,fin:fin,type:type});
+    var ge={id:"abs_"+Date.now()+"_"+salId,salId:salId,debut:debut,fin:fin,type:type};
+    D.absences.push(ge);_grpCreated.push(ge);
   });
   if(typeof _cleanedAbsenceMonths!=="undefined")_cleanedAbsenceMonths={};
+  // Reporter chaque absence dans le pointage (RTT posés, congés, etc.), comme pour une absence saisie une par une
+  _grpCreated.forEach(function(ge){fillPointageFromAbsences(ge);});
   save();
   document.getElementById("group-abs-modal").remove();
   showToast("✅ "+checked.length+" absence(s) créée(s) !");
