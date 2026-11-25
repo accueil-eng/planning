@@ -243,6 +243,13 @@ body.profile-salarie .tabs{display:none}
 <div id="visite-medicale-banner" style="display:none;cursor:pointer;background:#fce7f3;border-bottom:2px solid #db2777;color:#9d174d;font-size:13px;font-weight:600;padding:10px 16px;text-align:center"></div>
 
 <div class="pg on" id="pg-planning">
+  <style>
+@keyframes pbMarq{from{transform:translateX(100%)}to{transform:translateX(-100%)}}
+@keyframes pbBlink{0%,100%{opacity:1}50%{opacity:.25}}
+#plan-banner .pbm{display:inline-block;white-space:nowrap;animation:pbMarq 18s linear infinite}
+#plan-banner .pbb{animation:pbBlink 1s step-start infinite}
+</style>
+<div id="plan-banner" style="display:none;background:#fef2f2;border-bottom:2px solid #dc2626;color:#b91c1c;font-size:14px;font-weight:700;padding:8px 12px;overflow:hidden;align-items:center;gap:8px"><span id="plan-banner-txt" style="flex:1;overflow:hidden"></span><button class="btn" style="font-size:11px;padding:2px 8px;flex-shrink:0" onclick="editPlanBanner()">✏️</button></div>
   <div class="ptool">
     <button class="btn" id="btn-prev-week" style="touch-action:manipulation;min-width:40px;min-height:40px">◀</button>
     <span class="wlbl" id="wlbl"></span>
@@ -251,6 +258,7 @@ body.profile-salarie .tabs{display:none}
     <label style="font-size:12px;color:var(--muted)">Lignes</label>
     <input type="number" id="nbrows" min="1" max="30" value="6" style="width:52px" onchange="RP()">
     <div style="margin-left:auto;display:flex;gap:6px">
+      <button class="btn" style="font-size:12px;background:#fee2e2;border-color:#fca5a5;color:#b91c1c;display:none" id="btn-plan-banner" onclick="editPlanBanner()">📢 Message important</button>
       <button class="btn btn-p" style="font-size:12px" onclick="XCSV()">⬇ CSV</button>
       <button class="btn" style="font-size:12px;background:#e0f2fe;border-color:#7dd3fc;color:#0369a1" onclick="loadFromCloud(function(){RP();RC();RS();RA();RV();RF();RRDV();RANALYSE();RGANTT();RPOINTAGE();RINDEM();showToast('✅ Données actualisées')})">🔄 Actualiser</button>
       <button class="btn" style="font-size:12px;background:#dcfce7;border-color:#86efac;color:#166534" onclick="showWhatsAppModal()">📱 Envoyer planning WhatsApp</button>
@@ -1738,7 +1746,30 @@ function assignVeh(ck,sId,vehId){
 
 
 // ── PLANNING RENDER ──
+function renderPlanBanner(){
+  var b=document.getElementById("plan-banner"),t=document.getElementById("plan-banner-txt"),bt=document.getElementById("btn-plan-banner");
+  if(!b)return;
+  var isB=(typeof _currentProfile!=="undefined"&&_currentProfile==="bureau");
+  if(bt)bt.style.display=isB?"":"none";
+  var pb=D&&D.planningBanner;
+  if(!isB||!pb||!pb.active||!pb.text){b.style.display="none";return;}
+  var sp=document.createElement("span");sp.textContent="📢 "+pb.text;
+  sp.className=pb.style==="blink"?"pbb":"pbm";
+  t.innerHTML="";t.style.textAlign=pb.style==="blink"?"center":"left";t.appendChild(sp);
+  b.style.display="flex";
+}
+function editPlanBanner(){
+  var pb=D.planningBanner||{};
+  var txt=prompt("Message important (visible uniquement par Quentin, Valérie et Vincent sur le planning).\nLaissez vide pour supprimer la bannière.",pb.text||"");
+  if(txt===null)return;
+  txt=txt.trim();
+  if(!txt){D.planningBanner={text:"",active:false,style:pb.style||"marquee",ts:Date.now()};save();renderPlanBanner();showToast("Bannière supprimée");return;}
+  var blink=confirm("OK = bannière CLIGNOTANTE\nAnnuler = bannière DÉFILANTE");
+  D.planningBanner={text:txt,active:true,style:blink?"blink":"marquee",by:_bureauIdentity||"",ts:Date.now()};
+  save();renderPlanBanner();showToast("✅ Bannière publiée");
+}
 function RP(){
+  renderPlanBanner();
   if(!CW)return;
   // Nettoyage des anciens menus véhicule téléportés dans <body> (sinon ils s'accumulent à chaque rendu)
   document.querySelectorAll("body > .vdrop").forEach(function(d){d.remove();});
